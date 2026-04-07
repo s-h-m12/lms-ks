@@ -37,7 +37,8 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'lmsapp'
+    'lmsapp',
+    'django_cleanup.apps.CleanupConfig'
 ]
 
 MIDDLEWARE = [
