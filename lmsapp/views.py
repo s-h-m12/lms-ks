@@ -17,3 +17,6 @@ def login_view(request):
         else:
             return render(request,'login.html',{'error': 'Некорректные данные'})
     return render(request, 'login.html')
+
+def home_view(request):
+    return render(request, 'home.html')
