@@ -5,6 +5,11 @@ import os
 from PIL import Image
 
 
+class Category(models.Model):
+    name = models.CharField(max_length=100, unique=True, verbose_name='Название категории')
+    description = models.TextField(blank=True, verbose_name='Описание')
+    delete_date = models.DateTimeField(null=True, blank=True, verbose_name='Дата удаления')
+
 class Course(models.Model):
     STATUS_CHOICES = [
         ('draft', 'Черновик'),
@@ -21,7 +26,7 @@ class Course(models.Model):
     # Основные поля
     title = models.CharField(max_length=200, verbose_name='Название курса')
     description = models.TextField(verbose_name='Описание')
-    category = models.CharField(max_length=100, verbose_name='Категория')
+    category = models.ForeignKey(Category, null=True, on_delete=models.SET_NULL, verbose_name='Категория')
     level = models.CharField(max_length=20, choices=LEVEL_CHOICES, default='beginner')
     duration_hours = models.PositiveIntegerField(default=0, verbose_name='Длительность (часы)')
 
