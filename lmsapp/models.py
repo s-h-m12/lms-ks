@@ -1,14 +1,14 @@
 from django.db import models
-from django.utils import timezone
-from django.core.validators import MinValueValidator, MaxValueValidator
 import os
 from PIL import Image
+from django.contrib.auth.models import User
 
 
 class Category(models.Model):
+    # Основные поля
     name = models.CharField(max_length=100, unique=True, verbose_name='Название категории')
     description = models.TextField(blank=True, verbose_name='Описание')
-    delete_date = models.DateTimeField(null=True, blank=True, verbose_name='Дата удаления')
+    delete_date = models.DateTimeField(null=True, blank=True, verbose_name='Дата удаления') # Мягкое удаление
 
 class Course(models.Model):
     STATUS_CHOICES = [
@@ -53,3 +53,8 @@ class Course(models.Model):
             img = Image.open(self.image.path)
             img = img.resize((300, 200), Image.Resampling.LANCZOS)
             img.save(self.image.path)
+
+class UserLoginLog(models.Model):
+    # Основные поля
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='logins', verbose_name='Пользователь')
+    login_time = models.DateTimeField(auto_now_add=True, verbose_name='Время входа')
