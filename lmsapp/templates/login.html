@@ -8,13 +8,13 @@
           rel="stylesheet" integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB"
           crossorigin="anonymous">
     <link href="{% static 'styles/auth.css' %}" rel="stylesheet">
-    <link href="{% static 'kialogo.ico' %}" rel="icon">
+    <link href="{% static 'images/kialogo.ico' %}" rel="icon">
 </head>
 <body>
     <div class="login-container">
         <form method="POST">
             {% csrf_token %}
-            <img src="{% static 'kia_auth.png' %}" class="img-auth">
+            <img src="{% static 'images/kia_auth.png' %}" class="img-auth">
             <legend>Авторизация</legend>
             <div class="mb-3">
                 <input placeholder="Логин" name="username" type="text" id="login">
