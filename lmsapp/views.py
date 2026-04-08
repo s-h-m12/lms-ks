@@ -1,7 +1,7 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
-from .models import UserLoginLog
+from .models import UserLoginLog, Course
 from django.utils import timezone
 from django.contrib.auth.models import User
 
@@ -20,7 +20,8 @@ def login_view(request):
 
 @login_required
 def home_view(request):
-    return render(request, 'home.html')
+    courses = Course.objects.all()
+    return render(request, 'home.html', {'courses': courses})
 
 @login_required
 def logout_view(request):

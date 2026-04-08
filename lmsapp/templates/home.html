@@ -1,10 +1,80 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Title</title>
+    <title>Главная</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css"
+          rel="stylesheet" integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB"
+          crossorigin="anonymous">
+    <link href="{% static 'styles/styles.css' %}" rel="stylesheet">
+    <link href="{% static 'images/kialogo.ico' %}" rel="icon">
 </head>
 <body>
+    <nav class="navbar navbar-expand shadow-sm">
+        <div class="container-fluid">
+            <a href="{% url 'home' %}" class="navbar-brand first-item" ><img src="{% static 'images/kia-navlogo.png' %}"></a>
+        <div class="collapse navbar-collapse">
+        <ul class="navbar-nav">
+            <li class="nav-item">
+                <a class="nav-link active" href="{% url 'home' %}">Система обучения</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link active" href="{% url 'home' %}">Моё обучение</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link active" href="{% url 'home' %}">Курсы</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link active" href="{% url 'home' %}">Статистика</a>
+            </li>
+        </ul>
 
+            <ul class="navbar-nav ms-auto">
+                <li class="nav-item">
+                    <a class="nav-link active" href="{% url 'home' %}">ЛК</a>
+                </li>
+                <li class="nav-item last-item">
+                    <a class="nav-link active" href="{% url 'logout' %}">Выйти</a>
+                </li>
+            </ul>
+            </div>
+            </div>
+    </nav>
+    <div class="main-content">
+    <p class="above-block-text">Здравствуйте, {{ user.username }}!</p>
+    <div class="first-block">
+    <div class="container">
+        <p class="container-text">Ваш прогресс</p>
+        <div class="progress-bar"></div>
+        <p class="completed-text">Пройдено X из Z курсов</p>
+    </div>
+
+    <div class="container">
+        <p class="container-text">Продолжить обучение</p>
+        <p class="container-text">Пройдено X из Z курсов</p>
+    </div>
+    </div>
+
+    <p class="above-block-text">Рекомендуемые курсы</p>
+        <div class="first-block">
+        {% for course in courses %}
+            {% if course.id < 5 %}
+        <div class="container">
+            <p class="course-header">{{ course.title }}</p>
+            <p class="course-length">{{ course.duration_hours }}</p>
+        </div>
+            {% endif %}
+        {% endfor %}
+        </div>
+    </div>
+    <footer class="footer shadow-up-sm">
+        <span class="first-item">2004-2026 Киасофт Абакан. Все права защищены</span>
+        <span class="ms-auto last-item" style="color: #03672F">Политика конфиденциальности</span>
+    </footer>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI"
+        crossorigin="anonymous">
+    </script>
 </body>
 </html>
