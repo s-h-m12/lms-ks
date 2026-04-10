@@ -32,3 +32,7 @@ def logout_view(request):
 def course_view(request):
     courses = Course.objects.all()
     return render(request, 'course.html', {'courses': courses})
+
+@login_required
+def add_view(request):
+    return render(request, 'crud.html')
