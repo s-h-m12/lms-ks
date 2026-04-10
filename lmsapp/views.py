@@ -27,3 +27,8 @@ def home_view(request):
 def logout_view(request):
     logout(request)
     return redirect('login')
+
+@login_required
+def course_view(request):
+    courses = Course.objects.all()
+    return render(request, 'course.html', {'courses': courses})

@@ -1,0 +1,144 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Курсы</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css"
+          rel="stylesheet" integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB"
+          crossorigin="anonymous">
+    <link href="{% static 'styles/styles.css' %}" rel="stylesheet">
+    <link href="{% static 'styles/course.css' %}" rel="stylesheet">
+    <link href="{% static 'images/kialogo.ico' %}" rel="icon">
+</head>
+<body>
+    <nav class="navbar navbar-expand shadow-sm">
+        <div class="container-fluid">
+            <a href="{% url 'home' %}" class="navbar-brand first-item"><img src="{% static 'images/kia-navlogo.png' %}"></a>
+            <div class="collapse navbar-collapse">
+                <ul class="navbar-nav">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="{% url 'home' %}">Система обучения</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="{% url 'home' %}">Моё обучение</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="{% url 'home' %}">Курсы</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="{% url 'home' %}">Статистика</a>
+                    </li>
+                </ul>
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="{% url 'home' %}">ЛК</a>
+                    </li>
+                    <li class="nav-item last-item">
+                        <a class="nav-link active" href="{% url 'logout' %}">Выйти</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="main-content">
+        <form method="GET">
+            <div class="search-wrapper">
+                <input type="text" placeholder="Поиск..." class="form-control">
+            </div>
+
+            <div class="filters-sorting-row">
+                <div class="sorting-block">
+                    <p>Сортировать</p>
+                    <div class="form-check">
+                        <label class="form-check-label" for="flexCheckDefault">По дате (новые)</label>
+                        <input class="form-check-input" type="checkbox" id="flexCheckDefault">
+                    </div>
+                    <div class="form-check">
+                        <label class="form-check-label" for="flexCheckDefault2">По названию</label>
+                        <input class="form-check-input" type="checkbox" id="flexCheckDefault2">
+                    </div>
+                    <div class="form-check">
+                        <label class="form-check-label" for="flexCheckDefault3">По длительности</label>
+                        <input class="form-check-input" type="checkbox" id="flexCheckDefault3">
+                    </div>
+                </div>
+
+                <div class="filters-block">
+                    <p>Фильтры</p>
+                    <div class="d-flex border-top">
+                        <div class="bg-light p-2 border-end filter-label">Статус</div>
+                        <select class="form-select border-0">
+                            <option>Все</option>
+                            <option>Опубликован</option>
+                            <option>Черновик</option>
+                            <option>Архив</option>
+                        </select>
+                    </div>
+                    <div class="d-flex border-top">
+                        <div class="bg-light p-2 border-end filter-label">Категория</div>
+                        <select class="form-select border-0">
+                            <option>Все</option>
+                            <option>Программирование</option>
+                            <option>Базы данных</option>
+                            <option>Веб-разработка</option>
+                        </select>
+                    </div>
+                    <div class="d-flex border-top">
+                        <div class="bg-light p-2 border-end filter-label">Уровень</div>
+                        <select class="form-select border-0">
+                            <option>Все</option>
+                            <option>Начальный</option>
+                            <option>Средний</option>
+                            <option>Продвинутый</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </form>
+
+        <div class="courses-list">
+            <div class="course-card">
+                <img src="{% static 'images/course-placeholder.png' %}" alt="Курс" class="course-image">
+                <div class="course-info">
+                    <h2 class="course-title">Введение в Django</h2>
+                    <p class="course-duration">Длительность: 16 часов</p>
+                    <p class="course-description">Базовый курс по веб-фреймворку Django. Создание первого приложения, маршруты, шаблоны.</p>
+                </div>
+                <div class="course-decoration"></div>
+            </div>
+
+            <div class="course-card">
+                <img src="{% static 'images/course-placeholder.png' %}" alt="Курс" class="course-image">
+                <div class="course-info">
+                    <h2 class="course-title">SQL для начинающих</h2>
+                    <p class="course-duration">Длительность: 12 часов</p>
+                    <p class="course-description">Основы SQL: SELECT, INSERT, UPDATE, DELETE, JOIN, группировка и подзапросы.</p>
+                </div>
+                <div class="course-decoration"></div>
+            </div>
+
+            <div class="course-card">
+                <img src="{% static 'images/course-placeholder.png' %}" alt="Курс" class="course-image">
+                <div class="course-info">
+                    <h2 class="course-title">Продвинутый Django</h2>
+                    <p class="course-duration">Длительность: 24 часа</p>
+                    <p class="course-description">REST API, аутентификация, middleware, сигналы, тестирование и деплой.</p>
+                </div>
+                <div class="course-decoration"></div>
+            </div>
+        </div>
+    </div>
+
+    <footer class="footer shadow-up-sm">
+        <span class="first-item">2004-2026 Киасофт Абакан. Все права защищены</span>
+        <span class="ms-auto last-item" style="color: #03672F">Политика конфиденциальности</span>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"
+            integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI"
+            crossorigin="anonymous">
+    </script>
+</body>
+</html>

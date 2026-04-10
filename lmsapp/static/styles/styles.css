@@ -63,3 +63,7 @@ span {
     margin-top: 19.5px;
     margin-bottom: 19.5px;
 }
+
+.nav-item .nav-link:hover {
+    color: #9ACC39;
+}
