@@ -24,121 +24,212 @@
                         <a class="nav-link active" href="{% url 'home' %}">Моё обучение</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link active" href="{% url 'home' %}">Курсы</a>
+                        <a class="nav-link active" href="{% url 'course' %}">Курсы</a>
                     </li>
+                    {% if user.is_authenticated and user.groups.first.name == 'Администратор' %}
                     <li class="nav-item">
                         <a class="nav-link active" href="{% url 'home' %}">Статистика</a>
                     </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="{% url 'add' %}">Добавить курс</a>
+                    </li>
+                    {% endif %}
                 </ul>
                 <ul class="navbar-nav ms-auto">
                     <li class="nav-item">
                         <a class="nav-link active" href="{% url 'home' %}">ЛК</a>
                     </li>
+                    {% if user.is_authenticated and user.groups.first.name != 'Гость' %}
                     <li class="nav-item last-item">
                         <a class="nav-link active" href="{% url 'logout' %}">Выйти</a>
                     </li>
+                    {% endif %}
                 </ul>
             </div>
         </div>
     </nav>
-
     <div class="main-content">
-        <form method="GET">
-            <div class="search-wrapper">
-                <input type="text" placeholder="Поиск..." class="form-control">
-            </div>
-
-            <div class="filters-sorting-row">
-                <div class="sorting-block">
-                    <p>Сортировать</p>
-                    <div class="form-check">
-                        <label class="form-check-label" for="flexCheckDefault">По дате (новые)</label>
-                        <input class="form-check-input" type="checkbox" id="flexCheckDefault">
-                    </div>
-                    <div class="form-check">
-                        <label class="form-check-label" for="flexCheckDefault2">По названию</label>
-                        <input class="form-check-input" type="checkbox" id="flexCheckDefault2">
-                    </div>
-                    <div class="form-check">
-                        <label class="form-check-label" for="flexCheckDefault3">По длительности</label>
-                        <input class="form-check-input" type="checkbox" id="flexCheckDefault3">
-                    </div>
+        <div class="search-wrapper">
+            <input type="text" placeholder="Поиск..." class="form-control" id="searchInput">
+        </div>
+        <div class="filters-sorting-row">
+            <div class="sorting-block">
+                <p>Сортировать</p>
+                <div class="form-check">
+                    <label class="form-check-label" for="sortDate">По дате (новые)</label>
+                    <input class="form-check-input" type="checkbox" id="sortDate">
                 </div>
-
-                <div class="filters-block">
-                    <p>Фильтры</p>
-                    <div class="d-flex border-top">
-                        <div class="bg-light p-2 border-end filter-label">Статус</div>
-                        <select class="form-select border-0">
-                            <option>Все</option>
-                            <option>Опубликован</option>
-                            <option>Черновик</option>
-                            <option>Архив</option>
-                        </select>
-                    </div>
-                    <div class="d-flex border-top">
-                        <div class="bg-light p-2 border-end filter-label">Категория</div>
-                        <select class="form-select border-0">
-                            <option>Все</option>
-                            <option>Программирование</option>
-                            <option>Базы данных</option>
-                            <option>Веб-разработка</option>
-                        </select>
-                    </div>
-                    <div class="d-flex border-top">
-                        <div class="bg-light p-2 border-end filter-label">Уровень</div>
-                        <select class="form-select border-0">
-                            <option>Все</option>
-                            <option>Начальный</option>
-                            <option>Средний</option>
-                            <option>Продвинутый</option>
-                        </select>
-                    </div>
+                <div class="form-check">
+                    <label class="form-check-label" for="sortName">По названию</label>
+                    <input class="form-check-input" type="checkbox" id="sortName">
+                </div>
+                <div class="form-check">
+                    <label class="form-check-label" for="sortDuration">По длительности</label>
+                    <input class="form-check-input" type="checkbox" id="sortDuration">
                 </div>
             </div>
-        </form>
-
-        <div class="courses-list">
-            <div class="course-card">
-                <img src="{% static 'images/course-placeholder.png' %}" alt="Курс" class="course-image">
-                <div class="course-info">
-                    <h2 class="course-title">Введение в Django</h2>
-                    <p class="course-duration">Длительность: 16 часов</p>
-                    <p class="course-description">Базовый курс по веб-фреймворку Django. Создание первого приложения, маршруты, шаблоны.</p>
+            <div class="filters-block">
+                <p>Фильтры</p>
+                <div class="d-flex border-top">
+                    <div class="bg-light p-2 border-end filter-label">Статус</div>
+                    <select class="form-select border-0" id="statusFilter">
+                        <option value="все">Все</option>
+                        <option value="published">Опубликован</option>
+                        <option value="draft">Черновик</option>
+                        <option value="archived">Архив</option>
+                    </select>
                 </div>
-                <div class="course-decoration"></div>
-            </div>
-
-            <div class="course-card">
-                <img src="{% static 'images/course-placeholder.png' %}" alt="Курс" class="course-image">
-                <div class="course-info">
-                    <h2 class="course-title">SQL для начинающих</h2>
-                    <p class="course-duration">Длительность: 12 часов</p>
-                    <p class="course-description">Основы SQL: SELECT, INSERT, UPDATE, DELETE, JOIN, группировка и подзапросы.</p>
+                <div class="d-flex border-top">
+                    <div class="bg-light p-2 border-end filter-label">Категория</div>
+                    <select class="form-select border-0" id="categoryFilter">
+                        <option value="все">Все</option>
+                        <option value="программирование">Программирование</option>
+                        <option value="базы данных">Базы данных</option>
+                        <option value="веб-разработка">Веб-разработка</option>
+                    </select>
                 </div>
-                <div class="course-decoration"></div>
-            </div>
-
-            <div class="course-card">
-                <img src="{% static 'images/course-placeholder.png' %}" alt="Курс" class="course-image">
-                <div class="course-info">
-                    <h2 class="course-title">Продвинутый Django</h2>
-                    <p class="course-duration">Длительность: 24 часа</p>
-                    <p class="course-description">REST API, аутентификация, middleware, сигналы, тестирование и деплой.</p>
+                <div class="d-flex border-top">
+                    <div class="bg-light p-2 border-end filter-label">Уровень</div>
+                    <select class="form-select border-0" id="levelFilter">
+                        <option value="все">Все</option>
+                        <option value="beginner">Начальный</option>
+                        <option value="intermediate">Средний</option>
+                        <option value="advanced">Продвинутый</option>
+                    </select>
                 </div>
-                <div class="course-decoration"></div>
             </div>
         </div>
+        <div class="courses-list" id="coursesList">
+            {% for course in courses %}
+            <div class="course-card"
+                    data-id="{{ course.id }}"
+                    data-title="{{ course.title|lower }}"
+                    data-status="{{ course.status|lower }}"
+                    data-category="{{ course.category.name|lower }}"
+                    data-level="{{ course.level|lower }}"
+                    data-date="{{ course.created_at|date:'Ymd' }}"
+                    data-duration="{{ course.duration_hours }}">
+                <img src="{% if course.image %}{{ course.image.url }}{% else %}{% static 'images/course-placeholder.png' %}{% endif %}" alt="Курс" class="course-image">
+                <div class="course-info">
+                    <h2 class="course-title">{{ course.title }}</h2>
+                    <p class="course-duration">Длительность: {{ course.duration_hours }} часов</p>
+                    <p class="course-description">{{ course.description }}</p>
+                </div>
+                <div class="course-actions">
+                    {% if user.is_authenticated and user.groups.first.name != 'Гость' %}
+                    <form method="POST" action="{% url 'soft_delete' course.id %}" style="display: inline;">
+                        {% csrf_token %}
+                        <button type="submit" class="action-btn soft-delete-btn" title="Мягкое удаление">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M4 7H20" stroke="#9ACC39" stroke-width="2" stroke-linecap="round"/>
+                                <path d="M10 11V16" stroke="#9ACC39" stroke-width="2" stroke-linecap="round"/>
+                                <path d="M14 11V16" stroke="#9ACC39" stroke-width="2" stroke-linecap="round"/>
+                                <path d="M6 7L7 19C7 20.1 7.9 21 9 21H15C16.1 21 17 20.1 17 19L18 7" stroke="#9ACC39" stroke-width="2" stroke-linecap="round"/>
+                                <path d="M9 4L9.5 3H14.5L15 4" stroke="#9ACC39" stroke-width="2" stroke-linecap="round"/>
+                            </svg>
+                        </button>
+                    </form>
+                    {% endif %}
+                    {% if user.is_authenticated and user.groups.first.name == 'Администратор' %}
+                    <form method="POST" action="{% url 'hard_delete' course.id %}" style="display: inline;" onsubmit="return confirm('⚠️ ПОЛНОЕ УДАЛЕНИЕ! Курс будет удалён безвозвратно. Продолжить?');">
+                        {% csrf_token %}
+                        <button type="submit" class="action-btn hard-delete-btn" title="Полное удаление">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M4 7H20" stroke="#9ACC39" stroke-width="2" stroke-linecap="round"/>
+                                <path d="M10 11V16" stroke="#9ACC39" stroke-width="2" stroke-linecap="round"/>
+                                <path d="M14 11V16" stroke="#9ACC39" stroke-width="2" stroke-linecap="round"/>
+                                <path d="M6 7L7 19C7 20.1 7.9 21 9 21H15C16.1 21 17 20.1 17 19L18 7" stroke="#9ACC39" stroke-width="2" stroke-linecap="round"/>
+                                <path d="M9 4L9.5 3H14.5L15 4" stroke="#9ACC39" stroke-width="2" stroke-linecap="round"/>
+                                <line x1="19" y1="5" x2="5" y2="19" stroke="#9ACC39" stroke-width="2" stroke-linecap="round"/>
+                            </svg>
+                        </button>
+                    </form>
+                    {% endif %}
+                    {% if user.is_authenticated and user.groups.first.name != 'Гость' %}
+                    <a href="{% url 'edit' course.id %}" class="action-btn edit-btn" title="Редактировать">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M17 3L21 7L7 21H3V17L17 3Z" stroke="#9ACC39" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M15 5L19 9" stroke="#9ACC39" stroke-width="2" stroke-linecap="round"/>
+                        </svg>
+                    </a>
+                    {% endif %}
+                </div>
+                <div class="course-decoration"></div>
+            </div>
+            {% empty %}
+            <p>Курсы не найдены</p>
+            {% endfor %}
+        </div>
     </div>
-
     <footer class="footer shadow-up-sm">
         <span class="first-item">2004-2026 Киасофт Абакан. Все права защищены</span>
         <span class="ms-auto last-item" style="color: #03672F">Политика конфиденциальности</span>
     </footer>
-
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"
             integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI"
             crossorigin="anonymous">
+    </script>
+    <script>
+        let originalCards = [];
+
+        function saveOriginalCards() {
+            const cards = document.querySelectorAll('.course-card');
+            originalCards = Array.from(cards);
+        }
+
+        function filterAndSortCourses() {
+            const searchText = document.getElementById('searchInput').value.toLowerCase();
+            const statusFilter = document.getElementById('statusFilter').value.toLowerCase();
+            const categoryFilter = document.getElementById('categoryFilter').value.toLowerCase();
+            const levelFilter = document.getElementById('levelFilter').value.toLowerCase();
+
+            let sortBy = '';
+            if (document.getElementById('sortDate').checked) sortBy = 'date';
+            if (document.getElementById('sortName').checked) sortBy = 'name';
+            if (document.getElementById('sortDuration').checked) sortBy = 'duration';
+
+            let filteredCards = originalCards.filter(card => {
+                const title = card.getAttribute('data-title');
+                const status = card.getAttribute('data-status');
+                const category = card.getAttribute('data-category');
+                const level = card.getAttribute('data-level');
+
+                const matchesSearch = title.includes(searchText);
+                const matchesStatus = statusFilter === 'все' || status === statusFilter;
+                const matchesCategory = categoryFilter === 'все' || category === categoryFilter;
+                const matchesLevel = levelFilter === 'все' || level === levelFilter;
+
+                return matchesSearch && matchesStatus && matchesCategory && matchesLevel;
+            });
+
+            if (sortBy === 'date') {
+                filteredCards.sort((a, b) => b.getAttribute('data-date') - a.getAttribute('data-date'));
+            } else if (sortBy === 'name') {
+                filteredCards.sort((a, b) => a.getAttribute('data-title').localeCompare(b.getAttribute('data-title')));
+            } else if (sortBy === 'duration') {
+                filteredCards.sort((a, b) => parseInt(a.getAttribute('data-duration')) - parseInt(b.getAttribute('data-duration')));
+            }
+
+            const container = document.getElementById('coursesList');
+            container.innerHTML = '';
+
+            if (filteredCards.length === 0) {
+                container.innerHTML = '<p>Курсы не найдены</p>';
+            } else {
+                filteredCards.forEach(card => container.appendChild(card));
+            }
+        }
+
+        saveOriginalCards();
+        filterAndSortCourses();
+
+        document.getElementById('searchInput').addEventListener('keyup', filterAndSortCourses);
+        document.getElementById('statusFilter').addEventListener('change', filterAndSortCourses);
+        document.getElementById('categoryFilter').addEventListener('change', filterAndSortCourses);
+        document.getElementById('levelFilter').addEventListener('change', filterAndSortCourses);
+        document.getElementById('sortDate').addEventListener('change', filterAndSortCourses);
+        document.getElementById('sortName').addEventListener('change', filterAndSortCourses);
+        document.getElementById('sortDuration').addEventListener('change', filterAndSortCourses);
     </script>
 </body>
 </html>

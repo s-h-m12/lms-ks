@@ -1,15 +1,23 @@
 .login-container {
     display: flex;
+    flex-direction: column;
     justify-content: center;
     align-items: center;
     text-align: center;
     min-height: 100vh;
+    gap: 20px;
 }
 
-form {
+.login-form {
     border: 2px solid;
     border-radius: 10px;
     border-color: #DDDDDD;
+    background-color: #FFFFFF;
+}
+
+.guest-form {
+    border: none;
+    background: none;
 }
 
 .btn {
@@ -20,15 +28,28 @@ form {
     width: 240px;
     height: 60px;
     margin-bottom: 88px;
-    size: 20px;
     font-size: 24px;
 }
 
 .btn:hover {
-    background-color: #9ACC39;
-    border-radius: 25px;
-    border-color: #9ACC39;
+    background-color: #7DA82E;
+    border-color: #7DA82E;
     color: #FFFFFF;
+}
+
+.btn-guest {
+    background-color: #03672F;
+    border-radius: 25px;
+    border: none;
+    color: #FFFFFF;
+    width: 240px;
+    height: 60px;
+    font-size: 20px;
+    cursor: pointer;
+}
+
+.btn-guest:hover {
+    background-color: #024D22;
 }
 
 input {
@@ -51,4 +72,9 @@ legend {
     margin-bottom: 48px;
     font-size: 30px;
     color: #03672F;
+}
+
+.error-message {
+    color: red;
+    margin-bottom: 20px;
 }

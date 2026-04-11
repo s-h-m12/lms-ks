@@ -17,12 +17,20 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path
 from lmsapp import views
+from django.conf import settings
+from django.conf.urls.static import static
 
 urlpatterns = [
-    path('admin/', admin.site.urls),
-    path('login/', views.login_view, name='login'),
     path('', views.home_view, name='home'),
+    path('login/', views.login_view, name='login'),
     path('logout/', views.logout_view, name='logout'),
-    path('course/', views.course_view, name='courses'),
-    path('crud/', views.add_view, name='add')
+    path('course/', views.course_view, name='course'),
+    path('add/', views.add_view, name='add'),
+    path('edit/<int:course_id>/', views.edit_view, name='edit'),
+    path('save-course/', views.save_course, name='save_course'),
+    path('soft-delete/<int:course_id>/', views.soft_delete_course, name='soft_delete'),
+    path('hard-delete/<int:course_id>/', views.hard_delete_course, name='hard_delete'),
 ]
+
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

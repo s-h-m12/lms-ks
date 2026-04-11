@@ -13,59 +13,68 @@
 <body>
     <nav class="navbar navbar-expand shadow-sm">
         <div class="container-fluid">
-            <a href="{% url 'home' %}" class="navbar-brand first-item" ><img src="{% static 'images/kia-navlogo.png' %}"></a>
-        <div class="collapse navbar-collapse">
-        <ul class="navbar-nav">
-            <li class="nav-item">
-                <a class="nav-link active" href="{% url 'home' %}">Система обучения</a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link active" href="{% url 'home' %}">Моё обучение</a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link active" href="{% url 'home' %}">Курсы</a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link active" href="{% url 'home' %}">Статистика</a>
-            </li>
-        </ul>
-
-            <ul class="navbar-nav ms-auto">
-                <li class="nav-item">
-                    <a class="nav-link active" href="{% url 'home' %}">ЛК</a>
-                </li>
-                <li class="nav-item last-item">
-                    <a class="nav-link active" href="{% url 'logout' %}">Выйти</a>
-                </li>
-            </ul>
+            <a href="{% url 'home' %}" class="navbar-brand first-item"><img src="{% static 'images/kia-navlogo.png' %}"></a>
+            <div class="collapse navbar-collapse">
+                <ul class="navbar-nav">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="{% url 'home' %}">Система обучения</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="{% url 'home' %}">Моё обучение</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="{% url 'course' %}">Курсы</a>
+                    </li>
+                    {% if user.is_authenticated and user.groups.first.name == 'Администратор' %}
+                    <li class="nav-item">
+                        <a class="nav-link active" href="{% url 'home' %}">Статистика</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="{% url 'add' %}">Добавить курс</a>
+                    </li>
+                    {% endif %}
+                </ul>
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="{% url 'home' %}">ЛК</a>
+                    </li>
+                    {% if user.is_authenticated and user.groups.first.name != 'Гость' %}
+                    <li class="nav-item last-item">
+                        <a class="nav-link active" href="{% url 'logout' %}">Выйти</a>
+                    </li>
+                    {% endif %}
+                </ul>
             </div>
-            </div>
+        </div>
     </nav>
     <div class="main-content">
-    <p class="above-block-text">Здравствуйте, {{ user.username }}!</p>
-    <div class="first-block">
-    <div class="container">
-        <p class="container-text">Ваш прогресс</p>
-        <div class="progress-bar"></div>
-        <p class="completed-text">Пройдено X из Z курсов</p>
-    </div>
-
-    <div class="container">
-        <p class="container-text">Продолжить обучение</p>
-        <p class="container-text">Пройдено X из Z курсов</p>
-    </div>
-    </div>
-
-    <p class="above-block-text">Рекомендуемые курсы</p>
+        <p class="above-block-text">Здравствуйте, {{ user.username }}!</p>
+        {% if user.groups.first.name == 'Гость' %}
+            <div class="guest-notice">
+                <p>Вы вошли как гость. Для полного доступа авторизуйтесь.</p>
+            </div>
+        {% endif %}
         <div class="first-block">
-        {% for course in courses %}
-            {% if course.id < 5 %}
-        <div class="container">
-            <p class="course-header">{{ course.title }}</p>
-            <p class="course-length">{{ course.duration_hours }}</p>
+            <div class="container">
+                <p class="container-text">Ваш прогресс</p>
+                <div class="progress-bar"></div>
+                <p class="completed-text">Пройдено X из Z курсов</p>
+            </div>
+            <div class="container">
+                <p class="container-text">Продолжить обучение</p>
+                <p class="container-text">Пройдено X из Z курсов</p>
+            </div>
         </div>
-            {% endif %}
-        {% endfor %}
+        <p class="above-block-text">Рекомендуемые курсы</p>
+        <div class="first-block">
+            {% for course in courses %}
+                {% if course.id < 5 %}
+                <div class="container">
+                    <p class="course-header">{{ course.title }}</p>
+                    <p class="course-length">{{ course.duration_hours }} ч</p>
+                </div>
+                {% endif %}
+            {% endfor %}
         </div>
     </div>
     <footer class="footer shadow-up-sm">
@@ -73,8 +82,8 @@
         <span class="ms-auto last-item" style="color: #03672F">Политика конфиденциальности</span>
     </footer>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"
-        integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI"
-        crossorigin="anonymous">
+            integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI"
+            crossorigin="anonymous">
     </script>
 </body>
 </html>

@@ -110,7 +110,7 @@
 .main-content {
     width: 100%;
     padding-left: 72px;
-    padding-right: 0;
+    padding-right: 72px;
     box-sizing: border-box;
 }
 
@@ -125,11 +125,51 @@
 
 .course-card {
     display: flex;
+    align-items: center;
     border: 1px solid #DDDDDD;
     width: 100%;
     min-height: 200px;
     background-color: #FFFFFF;
     box-sizing: border-box;
+}
+
+.course-actions {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 12px;
+    padding: 0 16px;
+}
+
+.action-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 8px;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+}
+
+.action-btn:hover {
+    background-color: #f0f0f0;
+}
+
+.action-btn svg path,
+.action-btn svg line {
+    transition: stroke 0.2s ease;
+}
+
+.soft-delete-btn:hover svg path {
+    stroke: #f0ad4e;
+}
+
+.hard-delete-btn:hover svg path,
+.hard-delete-btn:hover svg line {
+    stroke: #d9534f;
+}
+
+.edit-btn:hover svg path {
+    stroke: #9ACC39;
 }
 
 .course-image {
@@ -204,24 +244,4 @@
 body {
     margin: 0;
     padding: 0;
-}
-
-@media (min-width: 1400px) {
-    .main-content {
-        max-width: calc(100% - 144px);
-        padding-left: 72px;
-        padding-right: 0;
-    }
-
-    .form-control {
-        max-width: calc(100% - 144px);
-    }
-
-    .filters-sorting-row {
-        max-width: calc(100% - 144px);
-    }
-
-    .courses-list {
-        max-width: calc(100% - 144px);
-    }
 }

@@ -3,7 +3,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Добавление курса</title>
+    <title>{% if course %}Редактирование курса{% else %}Добавление курса{% endif %}</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css"
           rel="stylesheet" integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB"
           crossorigin="anonymous">
@@ -24,33 +24,42 @@
                         <a class="nav-link active" href="{% url 'home' %}">Моё обучение</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link active" href="{% url 'home' %}">Курсы</a>
+                        <a class="nav-link active" href="{% url 'course' %}">Курсы</a>
                     </li>
+                    {% if user.is_authenticated and user.groups.first.name == 'Администратор' %}
                     <li class="nav-item">
                         <a class="nav-link active" href="{% url 'home' %}">Статистика</a>
                     </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="{% url 'add' %}">Добавить курс</a>
+                    </li>
+                    {% endif %}
                 </ul>
                 <ul class="navbar-nav ms-auto">
                     <li class="nav-item">
                         <a class="nav-link active" href="{% url 'home' %}">ЛК</a>
                     </li>
+                    {% if user.is_authenticated and user.groups.first.name != 'Гость' %}
                     <li class="nav-item last-item">
                         <a class="nav-link active" href="{% url 'logout' %}">Выйти</a>
                     </li>
+                    {% endif %}
                 </ul>
             </div>
         </div>
     </nav>
-
     <div class="main-content">
-        <a href="{% url 'courses' %}" class="back-button">
+        <a href="{% url 'course' %}" class="back-button">
             <span class="back-arrow">←</span> Назад
         </a>
-
-        <div class="form-container">
+        <form method="POST" enctype="multipart/form-data" class="form-container" action="{% url 'save_course' %}">
+            {% csrf_token %}
+            {% if course %}
+                <input type="hidden" name="course_id" value="{{ course.id }}">
+            {% endif %}
             <div class="form-header">
-                <h1 class="form-title">Курс</h1>
-                <button class="save-icon-btn">
+                <h1 class="form-title">{% if course %}Редактирование курса{% else %}Добавление курса{% endif %}</h1>
+                <button type="submit" class="save-icon-btn">
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <path d="M17 3H5C3.89 3 3 3.9 3 5V19C3 20.1 3.89 21 5 21H19C20.1 21 21 20.1 21 19V7L17 3Z" fill="#9ACC39" stroke="#9ACC39" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
                         <path d="M17 21V14H7V21" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
@@ -58,73 +67,70 @@
                     </svg>
                 </button>
             </div>
-
             <div class="form-fields">
                 <div class="field-row">
                     <div class="field-group">
                         <label class="field-label">Название курса</label>
-                        <input type="text" class="field-input" placeholder="Введите название курса">
+                        <input type="text" name="title" class="field-input" placeholder="Введите название курса" value="{{ course.title|default:'' }}">
                     </div>
                     <div class="field-group">
                         <label class="field-label">Категория</label>
-                        <select class="field-select">
-                            <option>Программирование</option>
-                            <option>Базы данных</option>
-                            <option>Веб-разработка</option>
-                            <option>Системное администрирование</option>
-                            <option>Кибербезопасность</option>
-                            <option>Управление проектами</option>
+                        <select name="category" class="field-select">
+                            <option value="Программирование" {% if course.category.name == "Программирование" %}selected{% endif %}>Программирование</option>
+                            <option value="Базы данных" {% if course.category.name == "Базы данных" %}selected{% endif %}>Базы данных</option>
+                            <option value="Веб-разработка" {% if course.category.name == "Веб-разработка" %}selected{% endif %}>Веб-разработка</option>
+                            <option value="Системное администрирование" {% if course.category.name == "Системное администрирование" %}selected{% endif %}>Системное администрирование</option>
+                            <option value="Кибербезопасность" {% if course.category.name == "Кибербезопасность" %}selected{% endif %}>Кибербезопасность</option>
+                            <option value="Управление проектами" {% if course.category.name == "Управление проектами" %}selected{% endif %}>Управление проектами</option>
                         </select>
                     </div>
                 </div>
-
                 <div class="field-row">
                     <div class="field-group">
                         <label class="field-label">Уровень</label>
-                        <select class="field-select">
-                            <option>Начальный</option>
-                            <option>Средний</option>
-                            <option>Продвинутый</option>
+                        <select name="level" class="field-select">
+                            <option value="beginner" {% if course.level == "beginner" %}selected{% endif %}>Начальный</option>
+                            <option value="intermediate" {% if course.level == "intermediate" %}selected{% endif %}>Средний</option>
+                            <option value="advanced" {% if course.level == "advanced" %}selected{% endif %}>Продвинутый</option>
                         </select>
                     </div>
                     <div class="field-group">
                         <label class="field-label">Длительность (часы)</label>
-                        <input type="number" class="field-input" placeholder="0">
+                        <input type="number" name="duration_hours" class="field-input" placeholder="0" value="{{ course.duration_hours|default:'' }}">
                     </div>
                 </div>
-
                 <div class="field-group full-width">
                     <label class="field-label">Статус</label>
-                    <select class="field-select">
-                        <option>Черновик</option>
-                        <option>Опубликован</option>
-                        <option>Архив</option>
+                    <select name="status" class="field-select">
+                        <option value="draft" {% if course.status == "draft" %}selected{% endif %}>Черновик</option>
+                        <option value="published" {% if course.status == "published" %}selected{% endif %}>Опубликован</option>
+                        <option value="archived" {% if course.status == "archived" %}selected{% endif %}>Архив</option>
                     </select>
                 </div>
             </div>
-
             <div class="description-container">
                 <h2 class="description-title">Описание курса</h2>
-                <textarea class="description-textarea" placeholder="Введите описание курса..."></textarea>
+                <textarea name="description" class="description-textarea" placeholder="Введите описание курса...">{{ course.description|default:'' }}</textarea>
             </div>
-
             <div class="image-container">
                 <div class="image-preview">
-                    <img src="{% static 'images/course-placeholder.png' %}" alt="Превью" class="preview-image">
+                    {% if course.image %}
+                        <img src="{{ course.image.url }}" alt="Превью" class="preview-image">
+                    {% else %}
+                        <img src="{% static 'images/course-placeholder.png' %}" alt="Превью" class="preview-image">
+                    {% endif %}
                 </div>
                 <div class="image-upload">
-                    <button class="upload-btn">Выбрать файл</button>
+                    <input type="file" name="image" class="form-control">
                     <p class="upload-hint">Форматы: PNG, JPG, JPEG<br>Макс. размер: 5 МБ</p>
                 </div>
             </div>
-
             <div class="form-actions">
-                <button class="cancel-btn">Отмена</button>
-                <button class="save-btn">Сохранить</button>
+                <a href="{% url 'course' %}" class="cancel-btn">Отмена</a>
+                <button type="submit" class="save-btn">Сохранить</button>
             </div>
-        </div>
+        </form>
     </div>
-
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"
             integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI"
             crossorigin="anonymous">
