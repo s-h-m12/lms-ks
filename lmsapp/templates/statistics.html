@@ -3,16 +3,17 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Главная</title>
+    <title>Статистика входов</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css"
           rel="stylesheet" integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB"
           crossorigin="anonymous">
     <link href="{% static 'styles/styles.css' %}" rel="stylesheet">
+    <link href="{% static 'styles/statistics.css' %}" rel="stylesheet">
     <link href="{% static 'styles/notifications.css' %}" rel="stylesheet">
     <link href="{% static 'images/kialogo.ico' %}" rel="icon">
 </head>
 <body>
-<div class="notification-container">
+    <div class="notification-container">
     {% if messages %}
         {% for message in messages %}
         <div class="notification notification-{% if message.tags == 'error' %}error{% elif message.tags == 'success' %}success{% elif message.tags == 'warning' %}warning{% else %}info{% endif %}">
@@ -35,7 +36,8 @@
         </div>
         {% endfor %}
     {% endif %}
-</div>
+    </div>
+
     <nav class="navbar navbar-expand shadow-sm">
         <div class="container-fluid">
             <a href="{% url 'home' %}" class="navbar-brand first-item"><img src="{% static 'images/kia-navlogo.png' %}"></a>
@@ -72,40 +74,51 @@
             </div>
         </div>
     </nav>
+
     <div class="main-content">
-        <p class="above-block-text">Здравствуйте, {{ user.username }}!</p>
-        {% if user.groups.first.name == 'Гость' %}
-            <div class="guest-notice">
-                <p>Вы вошли как гость. Для полного доступа авторизуйтесь.</p>
-            </div>
-        {% endif %}
-        <div class="first-block">
-            <div class="container">
-                <p class="container-text">Ваш прогресс</p>
-                <div class="progress-bar"></div>
-                <p class="completed-text">Пройдено X из Z курсов</p>
-            </div>
-            <div class="container">
-                <p class="container-text">Продолжить обучение</p>
-                <p class="container-text">Пройдено X из Z курсов</p>
-            </div>
-        </div>
-        <p class="above-block-text">Рекомендуемые курсы</p>
-        <div class="first-block">
-            {% for course in courses %}
-                {% if course.id < 5 %}
-                <div class="container">
-                    <p class="course-header">{{ course.title }}</p>
-                    <p class="course-length">{{ course.duration_hours }} ч</p>
+        <div class="statistics-container">
+            <form method="GET" action="{% url 'statistics' %}" class="statistics-form">
+                <div class="tabs-wrapper">
+                    <div class="tabs-group">
+                        <button type="submit" name="period" value="month" class="tab-btn {% if period == 'month' %}active{% endif %}">Месяц</button>
+                        <button type="submit" name="period" value="quarter" class="tab-btn {% if period == 'quarter' %}active{% endif %}">Квартал</button>
+                        <button type="submit" name="period" value="year" class="tab-btn {% if period == 'year' %}active{% endif %}">Год</button>
+                    </div>
+                    <div class="date-group">
+                        {% if period == 'month' %}
+                            <input type="month" name="date" class="date-input" value="{{ selected_date }}">
+                        {% elif period == 'quarter' %}
+                            <select name="date" class="date-select">
+                                <option value="{{ selected_date|slice:':4' }}-Q1" {% if selected_date|slice:'-2:' == 'Q1' %}selected{% endif %}>1 квартал</option>
+                                <option value="{{ selected_date|slice:':4' }}-Q2" {% if selected_date|slice:'-2:' == 'Q2' %}selected{% endif %}>2 квартал</option>
+                                <option value="{{ selected_date|slice:':4' }}-Q3" {% if selected_date|slice:'-2:' == 'Q3' %}selected{% endif %}>3 квартал</option>
+                                <option value="{{ selected_date|slice:':4' }}-Q4" {% if selected_date|slice:'-2:' == 'Q4' %}selected{% endif %}>4 квартал</option>
+                            </select>
+                        {% else %}
+                            <input type="number" name="date" class="date-input" value="{{ selected_date }}" placeholder="ГГГГ">
+                        {% endif %}
+                    </div>
+                    <div class="update-group">
+                        <button type="submit" class="update-btn">Обновить график</button>
+                    </div>
                 </div>
+            </form>
+
+            <div class="chart-container">
+                {% if chart_image %}
+                    <img src="data:image/png;base64,{{ chart_image }}" alt="График активности" class="chart-image">
+                {% else %}
+                    <p class="chart-placeholder">Нет данных для отображения</p>
                 {% endif %}
-            {% endfor %}
+            </div>
         </div>
     </div>
+
     <footer class="footer shadow-up-sm">
         <span class="first-item">2004-2026 Киасофт Абакан. Все права защищены</span>
         <span class="ms-auto last-item" style="color: #03672F">Политика конфиденциальности</span>
     </footer>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"
             integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI"
             crossorigin="anonymous">

@@ -30,6 +30,7 @@ urlpatterns = [
     path('save-course/', views.save_course, name='save_course'),
     path('soft-delete/<int:course_id>/', views.soft_delete_course, name='soft_delete'),
     path('hard-delete/<int:course_id>/', views.hard_delete_course, name='hard_delete'),
+    path('statistics/', views.statistics_view, name='statistics'),
 ]
 
 if settings.DEBUG:

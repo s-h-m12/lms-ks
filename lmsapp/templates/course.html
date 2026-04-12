@@ -9,9 +9,35 @@
           crossorigin="anonymous">
     <link href="{% static 'styles/styles.css' %}" rel="stylesheet">
     <link href="{% static 'styles/course.css' %}" rel="stylesheet">
+    <link href="{% static 'styles/notifications.css' %}" rel="stylesheet">
     <link href="{% static 'images/kialogo.ico' %}" rel="icon">
 </head>
 <body>
+    <div class="notification-container">
+    {% if messages %}
+        {% for message in messages %}
+        <div class="notification notification-{% if message.tags == 'error' %}error{% elif message.tags == 'success' %}success{% elif message.tags == 'warning' %}warning{% else %}info{% endif %}">
+            <div class="notification-icon">
+                {% if message.tags == 'success' %}✔
+                {% elif message.tags == 'error' %}✘
+                {% elif message.tags == 'warning' %}▲
+                {% else %}●{% endif %}
+            </div>
+            <div class="notification-content">
+                <div class="notification-title">
+                    {% if message.tags == 'success' %}Успешно
+                    {% elif message.tags == 'error' %}Ошибка
+                    {% elif message.tags == 'warning' %}Внимание
+                    {% else %}Информация{% endif %}
+                </div>
+                <div class="notification-message">{{ message.message }}</div>
+            </div>
+            <button class="notification-close">✕</button>
+        </div>
+        {% endfor %}
+    {% endif %}
+    </div>
+
     <nav class="navbar navbar-expand shadow-sm">
         <div class="container-fluid">
             <a href="{% url 'home' %}" class="navbar-brand first-item"><img src="{% static 'images/kia-navlogo.png' %}"></a>
@@ -28,7 +54,7 @@
                     </li>
                     {% if user.is_authenticated and user.groups.first.name == 'Администратор' %}
                     <li class="nav-item">
-                        <a class="nav-link active" href="{% url 'home' %}">Статистика</a>
+                        <a class="nav-link active" href="{% url 'statistics' %}">Статистика</a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link active" href="{% url 'add' %}">Добавить курс</a>
@@ -48,10 +74,12 @@
             </div>
         </div>
     </nav>
+
     <div class="main-content">
         <div class="search-wrapper">
             <input type="text" placeholder="Поиск..." class="form-control" id="searchInput">
         </div>
+
         <div class="filters-sorting-row">
             <div class="sorting-block">
                 <p>Сортировать</p>
@@ -99,16 +127,27 @@
                 </div>
             </div>
         </div>
+
+        {% if user.is_authenticated and user.groups.first.name == 'Администратор' %}
+        <div class="deleted-filter-wrapper">
+            <label class="deleted-filter-label">
+                <input type="checkbox" id="showDeletedCheckbox">
+                <span class="deleted-filter-text">Показывать удалённые курсы</span>
+            </label>
+        </div>
+        {% endif %}
+
         <div class="courses-list" id="coursesList">
             {% for course in courses %}
-            <div class="course-card"
+            <div class="course-card {% if course.id > 7 %}highlight-card{% endif %}"
                     data-id="{{ course.id }}"
                     data-title="{{ course.title|lower }}"
                     data-status="{{ course.status|lower }}"
                     data-category="{{ course.category.name|lower }}"
                     data-level="{{ course.level|lower }}"
                     data-date="{{ course.created_at|date:'Ymd' }}"
-                    data-duration="{{ course.duration_hours }}">
+                    data-duration="{{ course.duration_hours }}"
+                    data-deleted="{{ course.delete_date|yesno:'true,false' }}">
                 <img src="{% if course.image %}{{ course.image.url }}{% else %}{% static 'images/course-placeholder.png' %}{% endif %}" alt="Курс" class="course-image">
                 <div class="course-info">
                     <h2 class="course-title">{{ course.title }}</h2>
@@ -131,7 +170,7 @@
                     </form>
                     {% endif %}
                     {% if user.is_authenticated and user.groups.first.name == 'Администратор' %}
-                    <form method="POST" action="{% url 'hard_delete' course.id %}" style="display: inline;" onsubmit="return confirm('⚠️ ПОЛНОЕ УДАЛЕНИЕ! Курс будет удалён безвозвратно. Продолжить?');">
+                    <form method="POST" action="{% url 'hard_delete' course.id %}" style="display: inline;" onsubmit="return confirm('ПОЛНОЕ УДАЛЕНИЕ! Курс будет удалён безвозвратно. Продолжить?');">
                         {% csrf_token %}
                         <button type="submit" class="action-btn hard-delete-btn" title="Полное удаление">
                             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -161,14 +200,17 @@
             {% endfor %}
         </div>
     </div>
+
     <footer class="footer shadow-up-sm">
         <span class="first-item">2004-2026 Киасофт Абакан. Все права защищены</span>
         <span class="ms-auto last-item" style="color: #03672F">Политика конфиденциальности</span>
     </footer>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"
             integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI"
             crossorigin="anonymous">
     </script>
+    <script src="{% static 'js/notifications.js' %}"></script>
     <script>
         let originalCards = [];
 
@@ -183,6 +225,9 @@
             const categoryFilter = document.getElementById('categoryFilter').value.toLowerCase();
             const levelFilter = document.getElementById('levelFilter').value.toLowerCase();
 
+            const showDeleted = document.getElementById('showDeletedCheckbox') ?
+                document.getElementById('showDeletedCheckbox').checked : true;
+
             let sortBy = '';
             if (document.getElementById('sortDate').checked) sortBy = 'date';
             if (document.getElementById('sortName').checked) sortBy = 'name';
@@ -193,6 +238,9 @@
                 const status = card.getAttribute('data-status');
                 const category = card.getAttribute('data-category');
                 const level = card.getAttribute('data-level');
+                const isDeleted = card.getAttribute('data-deleted') === 'true';
+
+                if (!showDeleted && isDeleted) return false;
 
                 const matchesSearch = title.includes(searchText);
                 const matchesStatus = statusFilter === 'все' || status === statusFilter;
@@ -230,6 +278,11 @@
         document.getElementById('sortDate').addEventListener('change', filterAndSortCourses);
         document.getElementById('sortName').addEventListener('change', filterAndSortCourses);
         document.getElementById('sortDuration').addEventListener('change', filterAndSortCourses);
+
+        const showDeletedCheckbox = document.getElementById('showDeletedCheckbox');
+        if (showDeletedCheckbox) {
+            showDeletedCheckbox.addEventListener('change', filterAndSortCourses);
+        }
     </script>
 </body>
 </html>

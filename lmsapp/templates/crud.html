@@ -9,9 +9,34 @@
           crossorigin="anonymous">
     <link href="{% static 'styles/styles.css' %}" rel="stylesheet">
     <link href="{% static 'styles/crud.css' %}" rel="stylesheet">
+    <link href="{% static 'styles/notifications.css' %}" rel="stylesheet">
     <link href="{% static 'images/kialogo.ico' %}" rel="icon">
 </head>
 <body>
+    <div class="notification-container">
+    {% if messages %}
+        {% for message in messages %}
+        <div class="notification notification-{% if message.tags == 'error' %}error{% elif message.tags == 'success' %}success{% elif message.tags == 'warning' %}warning{% else %}info{% endif %}">
+            <div class="notification-icon">
+                {% if message.tags == 'success' %}✔
+                {% elif message.tags == 'error' %}✘
+                {% elif message.tags == 'warning' %}▲
+                {% else %}●{% endif %}
+            </div>
+            <div class="notification-content">
+                <div class="notification-title">
+                    {% if message.tags == 'success' %}Успешно
+                    {% elif message.tags == 'error' %}Ошибка
+                    {% elif message.tags == 'warning' %}Внимание
+                    {% else %}Информация{% endif %}
+                </div>
+                <div class="notification-message">{{ message.message }}</div>
+            </div>
+            <button class="notification-close">✕</button>
+        </div>
+        {% endfor %}
+    {% endif %}
+</div>
     <nav class="navbar navbar-expand shadow-sm">
         <div class="container-fluid">
             <a href="{% url 'home' %}" class="navbar-brand first-item"><img src="{% static 'images/kia-navlogo.png' %}"></a>
@@ -28,7 +53,7 @@
                     </li>
                     {% if user.is_authenticated and user.groups.first.name == 'Администратор' %}
                     <li class="nav-item">
-                        <a class="nav-link active" href="{% url 'home' %}">Статистика</a>
+                        <a class="nav-link active" href="{% url 'statistics' %}">Статистика</a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link active" href="{% url 'add' %}">Добавить курс</a>
@@ -68,6 +93,16 @@
                 </button>
             </div>
             <div class="form-fields">
+                <!-- Поле ID (только для чтения, отображается только при редактировании) -->
+                {% if course %}
+                <div class="field-row">
+                    <div class="field-group">
+                        <label class="field-label">ID курса (только для чтения)</label>
+                        <input type="text" class="field-input" value="{{ course.id }}" readonly disabled style="background-color: #f5f5f5; color: #666666;">
+                    </div>
+                </div>
+                {% endif %}
+
                 <div class="field-row">
                     <div class="field-group">
                         <label class="field-label">Название курса</label>
@@ -135,5 +170,66 @@
             integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI"
             crossorigin="anonymous">
     </script>
+    <script src="{% static 'js/notifications.js' %}"></script>
+<script>
+    // Уникальный ключ для этой страницы
+    const pageKey = 'crudPageOpen_' + window.location.pathname;
+
+    function checkAndBlock() {
+        // Проверяем, есть ли открытая страница через localStorage
+        if (localStorage.getItem(pageKey) === 'true') {
+            // Страница уже открыта
+            const notification = document.createElement('div');
+            notification.className = 'notification notification-warning';
+            notification.innerHTML = `
+                <div class="notification-icon">▲</div>
+                <div class="notification-content">
+                    <div class="notification-title">Внимание</div>
+                    <div class="notification-message">Страница добавления/редактирования уже открыта. Пожалуйста, закройте её перед открытием новой.</div>
+                </div>
+                <button class="notification-close">✕</button>
+            `;
+
+            const container = document.querySelector('.notification-container');
+            if (container) {
+                container.appendChild(notification);
+            } else {
+                alert('Страница добавления/редактирования уже открыта в другой вкладке!');
+            }
+
+            // Блокируем взаимодействие с формой
+            const form = document.querySelector('form');
+            if (form) {
+                form.style.pointerEvents = 'none';
+                form.style.opacity = '0.5';
+            }
+
+            // Кнопка закрытия уведомления
+            const closeBtn = notification.querySelector('.notification-close');
+            if (closeBtn) {
+                closeBtn.addEventListener('click', function() {
+                    notification.remove();
+                });
+            }
+
+            return false;
+        }
+
+        // Помечаем, что страница открыта
+        localStorage.setItem(pageKey, 'true');
+
+        // При закрытии страницы снимаем метку
+        window.addEventListener('beforeunload', function() {
+            localStorage.removeItem(pageKey);
+        });
+
+        return true;
+    }
+
+    // Запускаем проверку
+    if (!checkAndBlock()) {
+        // Если блокировка сработала, ничего не делаем
+    }
+</script>
 </body>
 </html>

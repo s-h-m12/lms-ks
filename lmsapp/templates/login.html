@@ -8,9 +8,34 @@
           rel="stylesheet" integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB"
           crossorigin="anonymous">
     <link href="{% static 'styles/auth.css' %}" rel="stylesheet">
+    <link href="{% static 'styles/notifications.css' %}" rel="stylesheet">
     <link href="{% static 'images/kialogo.ico' %}" rel="icon">
 </head>
 <body>
+    <div class="notification-container">
+    {% if messages %}
+        {% for message in messages %}
+        <div class="notification notification-{% if message.tags == 'error' %}error{% elif message.tags == 'success' %}success{% elif message.tags == 'warning' %}warning{% else %}info{% endif %}">
+            <div class="notification-icon">
+                {% if message.tags == 'success' %}✔
+                {% elif message.tags == 'error' %}✘
+                {% elif message.tags == 'warning' %}▲
+                {% else %}●{% endif %}
+            </div>
+            <div class="notification-content">
+                <div class="notification-title">
+                    {% if message.tags == 'success' %}Успешно
+                    {% elif message.tags == 'error' %}Ошибка
+                    {% elif message.tags == 'warning' %}Внимание
+                    {% else %}Информация{% endif %}
+                </div>
+                <div class="notification-message">{{ message.message }}</div>
+            </div>
+            <button class="notification-close">✕</button>
+        </div>
+        {% endfor %}
+    {% endif %}
+</div>
     <div class="login-container">
         <form method="POST" class="login-form">
             {% csrf_token %}
@@ -38,5 +63,6 @@
             integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI"
             crossorigin="anonymous">
     </script>
+    <script src="{% static 'js/notifications.js' %}"></script>
 </body>
 </html>

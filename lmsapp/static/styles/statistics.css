@@ -1,0 +1,162 @@
+html, body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+}
+
+body {
+    display: flex;
+    flex-direction: column;
+    background-color: #FFFFFF;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+.main-content {
+    flex: 1 0 auto;
+    width: 100%;
+    max-width: 85%;
+    margin: 0 auto;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+.statistics-container {
+    width: 100%;
+    margin-top: 24px;
+    margin-bottom: 48px;
+    border: 1px solid #DDDDDD;
+    background-color: #FFFFFF;
+}
+
+.statistics-form {
+    width: 100%;
+}
+
+.tabs-wrapper {
+    display: flex;
+    align-items: stretch;
+    border-bottom: 1px solid #DDDDDD;
+}
+
+.tabs-group {
+    display: flex;
+}
+
+.tab-btn {
+    padding: 12px 24px;
+    background: none;
+    border: none;
+    font-size: 14px;
+    cursor: pointer;
+    color: #666666;
+    transition: all 0.2s ease;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -1px;
+}
+
+.tab-btn.active {
+    color: #03672F;
+    border-bottom-color: #03672F;
+}
+
+.tab-btn:hover:not(.active) {
+    color: #9ACC39;
+}
+
+.date-group {
+    display: flex;
+    align-items: center;
+    padding: 0 20px;
+    flex: 1;
+}
+
+.date-input, .date-select {
+    padding: 8px 12px;
+    border: 1px solid #DDDDDD;
+    font-size: 14px;
+    width: 160px;
+    background-color: #FFFFFF;
+}
+
+.date-input:focus, .date-select:focus {
+    border-color: #9ACC39;
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(154, 204, 57, 0.25);
+}
+
+.update-group {
+    display: flex;
+    align-items: center;
+    padding: 0 20px;
+}
+
+.update-btn {
+    background-color: #03672F;
+    color: white;
+    border: none;
+    padding: 8px 24px;
+    cursor: pointer;
+    font-size: 14px;
+    white-space: nowrap;
+}
+
+.update-btn:hover {
+    background-color: #024D22;
+}
+
+.chart-container {
+    padding: 20px;
+    background-color: #FFFFFF;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.chart-image {
+    width: 100%;
+    max-width: 100%;
+    height: auto;
+    display: block;
+}
+
+.chart-placeholder {
+    text-align: center;
+    color: #AAAAAA;
+    font-size: 16px;
+    padding: 40px;
+}
+
+.footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    height: 39px;
+    padding: 0 72px;
+    background-color: #FFFFFF;
+    border-top: 1px solid #DDDDDD;
+    box-sizing: border-box;
+    width: 100%;
+    flex-shrink: 0;
+}
+
+.footer .first-item {
+    margin-left: 0;
+}
+
+.footer .last-item {
+    margin-right: 0;
+}
+
+.nav-item .nav-link:hover {
+    color: #9ACC39;
+}
+
+.container-fluid {
+    padding-left: 72px;
+    padding-right: 72px;
+    width: 100%;
+    box-sizing: border-box;
+}
