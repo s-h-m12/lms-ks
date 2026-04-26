@@ -76,7 +76,7 @@
         <p class="above-block-text">Здравствуйте, {{ user.username }}!</p>
         {% if user.groups.first.name == 'Гость' %}
             <div class="guest-notice">
-                <p>Вы вошли как гость. Для полного доступа авторизуйтесь.</p>
+                <p>Вы вошли как гость. Для полного доступа <a href="{% url 'login' %}">авторизуйтесь</a></p>
             </div>
         {% endif %}
         <div class="first-block">
@@ -94,7 +94,7 @@
         <div class="first-block">
             {% for course in courses %}
                 {% if course.id < 5 %}
-                <div class="container">
+                <div class="container course-card-link" onclick="location.href='{% url 'course_detail' course.id %}'" style="cursor: pointer;">
                     <p class="course-header">{{ course.title }}</p>
                     <p class="course-length">{{ course.duration_hours }} ч</p>
                 </div>

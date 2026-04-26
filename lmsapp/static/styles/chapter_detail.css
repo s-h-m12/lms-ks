@@ -1,0 +1,110 @@
+.chapter-container {
+    border: 1px solid #DDDDDD;
+    padding: 30px;
+    margin-top: 20px;
+    margin-bottom: 40px;
+    background-color: #FFFFFF;
+}
+
+.chapter-title-main {
+    margin: 0 0 20px 0;
+    font-size: 24px;
+}
+
+.theory-content {
+    margin: 20px 0;
+    line-height: 1.6;
+}
+
+.question {
+    border: 1px solid #DDDDDD;
+    padding: 20px;
+    margin-bottom: 20px;
+    background-color: #FFFFFF;
+}
+
+.question-text {
+    margin: 0 0 15px 0;
+    font-size: 16px;
+}
+
+.options {
+    margin-top: 15px;
+}
+
+.option-label {
+    display: block;
+    margin-bottom: 10px;
+    cursor: pointer;
+}
+
+.option-label input {
+    margin-right: 10px;
+}
+
+.test-result {
+    text-align: center;
+    padding: 30px;
+    background-color: #f9f9f9;
+    margin: 20px 0;
+}
+
+.passed {
+    color: #9ACC39;
+    font-weight: bold;
+    font-size: 18px;
+}
+
+.failed {
+    color: #dc3545;
+    font-weight: bold;
+    font-size: 18px;
+}
+
+.btn-submit {
+    background-color: #03672F;
+    color: white;
+    border: none;
+    padding: 12px 30px;
+    cursor: pointer;
+    font-size: 16px;
+    margin-top: 20px;
+    width: 100%;
+}
+
+.btn-submit:hover {
+    background-color: #024D22;
+}
+
+.btn-return {
+    display: inline-block;
+    background-color: #9ACC39;
+    color: white;
+    padding: 10px 20px;
+    text-decoration: none;
+    margin-top: 20px;
+    border: none;
+}
+
+.btn-return:hover {
+    background-color: #7DA82E;
+    color: white;
+}
+
+.back-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: #9ACC39;
+    text-decoration: none;
+    font-size: 16px;
+    margin: 24px 0;
+}
+
+.back-button:hover {
+    color: #03672F;
+}
+
+.back-arrow {
+    font-size: 18px;
+}

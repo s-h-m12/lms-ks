@@ -5,7 +5,7 @@ from django.http import HttpResponseRedirect
 from django.urls import reverse
 from django.utils import timezone
 from django.contrib import messages
-from .models import UserLoginLog, Course, Category
+from .models import UserLoginLog, Course, Category, Chapter, Question, TestResult, UserProgress
 import os
 import matplotlib
 
@@ -79,6 +79,132 @@ def course_view(request):
     except Exception:
         messages.error(request, 'Ошибка', 'Не удалось загрузить курсы')
         return render(request, 'course.html', {'courses': []})
+
+
+@login_required
+def course_detail_view(request, course_id):
+    try:
+        course = get_object_or_404(Course, id=course_id, delete_date__isnull=True)
+        chapters = course.chapters.all()
+
+        progress, created = UserProgress.objects.get_or_create(
+            user=request.user,
+            course=course,
+            defaults={'total_chapters': chapters.count()}
+        )
+
+        if progress.total_chapters != chapters.count():
+            progress.total_chapters = chapters.count()
+            progress.save()
+
+        completed_chapters = TestResult.objects.filter(
+            user=request.user,
+            chapter__course=course
+        ).values_list('chapter_id', flat=True)
+
+        context = {
+            'course': course,
+            'chapters': chapters,
+            'completed_chapters': list(completed_chapters),
+            'progress': progress,
+        }
+        return render(request, 'course_detail.html', context)
+    except Exception:
+        messages.error(request, 'Ошибка', 'Не удалось загрузить содержимое курса')
+        return redirect('course')
+
+
+@login_required
+def chapter_view(request, chapter_id):
+    try:
+        chapter = get_object_or_404(Chapter, id=chapter_id)
+        existing_result = None
+        if chapter.chapter_type == 'test':
+            existing_result = TestResult.objects.filter(
+                user=request.user,
+                chapter=chapter
+            ).first()
+
+        context = {
+            'chapter': chapter,
+            'existing_result': existing_result,
+        }
+        return render(request, 'chapter_detail.html', context)
+    except Exception:
+        messages.error(request, 'Ошибка', 'Не удалось загрузить главу')
+        return redirect('course')
+
+
+@login_required
+def submit_test(request, chapter_id):
+    if request.method != 'POST':
+        return redirect('chapter', chapter_id=chapter_id)
+
+    try:
+        chapter = get_object_or_404(Chapter, id=chapter_id)
+        questions = chapter.questions.all()
+
+        if not questions:
+            messages.warning(request, 'Внимание', 'В этом тесте пока нет вопросов')
+            return redirect('chapter', chapter_id=chapter_id)
+
+        existing = TestResult.objects.filter(user=request.user, chapter=chapter).first()
+        if existing:
+            messages.warning(request, 'Внимание', 'Вы уже проходили этот тест')
+            return redirect('chapter', chapter_id=chapter_id)
+
+        correct_count = 0
+        total = questions.count()
+
+        for question in questions:
+            answer = request.POST.get(f'question_{question.id}')
+            if answer and answer.lower() == question.correct_answer.lower():
+                correct_count += 1
+
+        percent = (correct_count / total) * 100
+        passed = percent >= 70
+
+        TestResult.objects.create(
+            user=request.user,
+            chapter=chapter,
+            score=correct_count,
+            total_questions=total,
+            percent=percent,
+            passed=passed
+        )
+
+        course = chapter.course
+        completed_tests = TestResult.objects.filter(
+            user=request.user,
+            chapter__course=course
+        ).count()
+
+        progress, _ = UserProgress.objects.get_or_create(
+            user=request.user,
+            course=course,
+            defaults={'total_chapters': course.chapters.count()}
+        )
+        progress.completed_chapters = completed_tests
+        progress.percent_complete = (
+                                                completed_tests / progress.total_chapters) * 100 if progress.total_chapters > 0 else 0
+
+        if progress.percent_complete >= 100:
+            progress.is_completed = True
+            progress.completed_at = timezone.now()
+
+        progress.save()
+
+        if passed:
+            messages.success(request, 'Поздравляем!',
+                             f'Вы прошли тест! Результат: {correct_count}/{total} ({percent:.0f}%)')
+        else:
+            messages.warning(request, 'Тест не пройден',
+                             f'Результат: {correct_count}/{total} ({percent:.0f}%). Нужно набрать 70%')
+
+        return redirect('chapter', chapter_id=chapter_id)
+    except Exception:
+        messages.error(request, 'Ошибка', 'Произошла ошибка при проверке теста')
+        return redirect('course')
 
 
 @login_required

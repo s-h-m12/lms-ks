@@ -1,0 +1,146 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{{ chapter.title }}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css"
+          rel="stylesheet" integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB"
+          crossorigin="anonymous">
+    <link href="{% static 'styles/styles.css' %}" rel="stylesheet">
+    <link href="{% static 'styles/chapter_detail.css' %}" rel="stylesheet">
+    <link href="{% static 'styles/notifications.css' %}" rel="stylesheet">
+    <link href="{% static 'images/kialogo.ico' %}" rel="icon">
+</head>
+<body>
+<div class="notification-container">
+    {% if messages %}
+        {% for message in messages %}
+        <div class="notification notification-{% if message.tags == 'error' %}error{% elif message.tags == 'success' %}success{% elif message.tags == 'warning' %}warning{% else %}info{% endif %}">
+            <div class="notification-icon">
+                {% if message.tags == 'success' %}✔
+                {% elif message.tags == 'error' %}✘
+                {% elif message.tags == 'warning' %}▲
+                {% else %}●{% endif %}
+            </div>
+            <div class="notification-content">
+                <div class="notification-title">
+                    {% if message.tags == 'success' %}Успешно
+                    {% elif message.tags == 'error' %}Ошибка
+                    {% elif message.tags == 'warning' %}Внимание
+                    {% else %}Информация{% endif %}
+                </div>
+                <div class="notification-message">{{ message.message }}</div>
+            </div>
+            <button class="notification-close">✕</button>
+        </div>
+        {% endfor %}
+    {% endif %}
+</div>
+
+<nav class="navbar navbar-expand shadow-sm">
+    <div class="container-fluid">
+        <a href="{% url 'home' %}" class="navbar-brand first-item"><img src="{% static 'images/kia-navlogo.png' %}"></a>
+        <div class="collapse navbar-collapse">
+            <ul class="navbar-nav">
+                <li class="nav-item">
+                    <a class="nav-link active" href="{% url 'home' %}">Система обучения</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link active" href="{% url 'home' %}">Моё обучение</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link active" href="{% url 'course' %}">Курсы</a>
+                </li>
+                {% if user.is_authenticated and user.groups.first.name == 'Администратор' %}
+                <li class="nav-item">
+                    <a class="nav-link active" href="{% url 'statistics' %}">Статистика</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link active" href="{% url 'add' %}">Добавить курс</a>
+                </li>
+                {% endif %}
+            </ul>
+            <ul class="navbar-nav ms-auto">
+                <li class="nav-item">
+                    <a class="nav-link active" href="{% url 'home' %}">ЛК</a>
+                </li>
+                {% if user.is_authenticated and user.groups.first.name != 'Гость' %}
+                <li class="nav-item last-item">
+                    <a class="nav-link active" href="{% url 'logout' %}">Выйти</a>
+                </li>
+                {% endif %}
+            </ul>
+        </div>
+    </div>
+</nav>
+
+<div class="main-content">
+    <a href="{% url 'course_detail' chapter.course.id %}" class="back-button">
+        <span class="back-arrow">←</span> Назад к курсу
+    </a>
+
+    <div class="chapter-container">
+        <h1 class="chapter-title-main">{{ chapter.title }}</h1>
+
+        {% if chapter.chapter_type == 'theory' %}
+            <div class="theory-content">
+                {{ chapter.content|linebreaks }}
+            </div>
+            <a href="{% url 'course_detail' chapter.course.id %}" class="btn-return">Вернуться к курсу</a>
+
+        {% elif chapter.chapter_type == 'test' %}
+            {% if existing_result %}
+                <div class="test-result">
+                    <h3>Результат теста</h3>
+                    <p>Правильных ответов: {{ existing_result.score }} из {{ existing_result.total_questions }}</p>
+                    <p>Процент выполнения: {{ existing_result.percent|floatformat:0 }}%</p>
+                    {% if existing_result.passed %}
+                        <p class="passed">Тест пройден</p>
+                    {% else %}
+                        <p class="failed">Тест не пройден. Нужно набрать 70 процентов</p>
+                    {% endif %}
+                </div>
+                <a href="{% url 'course_detail' chapter.course.id %}" class="btn-return">Вернуться к курсу</a>
+            {% else %}
+                <form method="POST" action="{% url 'submit_test' chapter.id %}">
+                    {% csrf_token %}
+                    {% for question in chapter.questions.all %}
+                    <div class="question">
+                        <p class="question-text"><strong>Вопрос {{ forloop.counter }}:</strong> {{ question.text }}</p>
+                        <div class="options">
+                            <label class="option-label">
+                                <input type="radio" name="question_{{ question.id }}" value="a" required> A) {{ question.option_a }}
+                            </label>
+                            <label class="option-label">
+                                <input type="radio" name="question_{{ question.id }}" value="b"> Б) {{ question.option_b }}
+                            </label>
+                            {% if question.option_c %}
+                            <label class="option-label">
+                                <input type="radio" name="question_{{ question.id }}" value="c"> В) {{ question.option_c }}
+                            </label>
+                            {% endif %}
+                            {% if question.option_d %}
+                            <label class="option-label">
+                                <input type="radio" name="question_{{ question.id }}" value="d"> Г) {{ question.option_d }}
+                            </label>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                    <button type="submit" class="btn-submit">Отправить ответы</button>
+                </form>
+            {% endif %}
+        {% endif %}
+    </div>
+</div>
+
+<footer class="footer shadow-up-sm">
+    <span class="first-item">2004-2026 Киасофт Абакан. Все права защищены</span>
+    <span class="ms-auto last-item" style="color: #03672F">Политика конфиденциальности</span>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
+<script src="{% static 'js/notifications.js' %}"></script>
+</body>
+</html>
