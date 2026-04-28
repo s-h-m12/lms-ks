@@ -52,7 +52,7 @@
                 <li class="nav-item">
                     <a class="nav-link active" href="{% url 'course' %}">Курсы</a>
                 </li>
-                {% if user.is_authenticated and user.groups.first.name == 'Администратор' %}
+                {% if user.is_authenticated and user.groups.first.name == 'Администратор' or user.is_authenticated and user.groups.first.name == 'Методист' %}
                 <li class="nav-item">
                     <a class="nav-link active" href="{% url 'statistics' %}">Статистика</a>
                 </li>
@@ -80,14 +80,26 @@
         <span class="back-arrow">←</span> Назад к курсу
     </a>
 
-    <div class="chapter-container">
+    <div class="chapter-container {% if theory_completed %}theory-completed-container{% endif %}">
         <h1 class="chapter-title-main">{{ chapter.title }}</h1>
 
         {% if chapter.chapter_type == 'theory' %}
             <div class="theory-content">
                 {{ chapter.content|linebreaks }}
             </div>
-            <a href="{% url 'course_detail' chapter.course.id %}" class="btn-return">Вернуться к курсу</a>
+
+            <div class="theory-actions">
+                <a href="{% url 'course_detail' chapter.course.id %}" class="btn-return">Вернуться к курсу</a>
+
+                {% if not theory_completed %}
+                    <form method="POST" action="{% url 'mark_theory_complete' chapter.id %}" style="display: inline;">
+                        {% csrf_token %}
+                        <button type="submit" class="btn-mark-complete">Отметить как прочитано</button>
+                    </form>
+                {% else %}
+                    <span class="theory-completed-badge">✓ Пройдено</span>
+                {% endif %}
+            </div>
 
         {% elif chapter.chapter_type == 'test' %}
             {% if existing_result %}

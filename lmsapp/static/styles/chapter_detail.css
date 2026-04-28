@@ -1,9 +1,23 @@
+.main-content {
+    width: 100%;
+    max-width: 85%;
+    margin: 0 auto;
+    padding: 0;
+    box-sizing: border-box;
+}
+
 .chapter-container {
     border: 1px solid #DDDDDD;
     padding: 30px;
     margin-top: 20px;
     margin-bottom: 40px;
     background-color: #FFFFFF;
+    transition: background-color 0.3s ease;
+}
+
+.chapter-container.theory-completed-container {
+    background-color: #f0f9f0;
+    border-color: #9ACC39;
 }
 
 .chapter-title-main {
@@ -14,6 +28,15 @@
 .theory-content {
     margin: 20px 0;
     line-height: 1.6;
+}
+
+.theory-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 30px;
+    gap: 15px;
+    flex-wrap: wrap;
 }
 
 .question {
@@ -70,6 +93,7 @@
     font-size: 16px;
     margin-top: 20px;
     width: 100%;
+    border-radius: 5px;
 }
 
 .btn-submit:hover {
@@ -84,11 +108,51 @@
     text-decoration: none;
     margin-top: 20px;
     border: none;
+    border-radius: 5px;
 }
 
 .btn-return:hover {
     background-color: #7DA82E;
     color: white;
+}
+
+.btn-mark-complete {
+    background-color: #9ACC39;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    cursor: pointer;
+    font-size: 14px;
+    border-radius: 5px;
+    display: inline-block;
+    width: auto;
+    margin: 0;
+}
+
+.btn-mark-complete:hover {
+    background-color: #7DA82E;
+}
+
+.theory-completed-badge {
+    display: inline-block;
+    background-color: #9ACC39;
+    color: white;
+    padding: 10px 20px;
+    border-radius: 5px;
+    font-size: 14px;
+}
+
+.theory-completed-message {
+    text-align: center;
+    padding: 15px;
+    background-color: #f0f9f0;
+    margin: 20px 0;
+    color: #03672F;
+}
+
+.theory-complete-form {
+    margin: 20px 0;
+    display: inline-block;
 }
 
 .back-button {

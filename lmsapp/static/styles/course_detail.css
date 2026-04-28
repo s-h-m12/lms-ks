@@ -1,3 +1,11 @@
+.main-content {
+    width: 100%;
+    max-width: 85%;
+    margin: 0 auto;
+    padding: 0;
+    box-sizing: border-box;
+}
+
 .course-header {
     display: flex;
     gap: 30px;
@@ -137,4 +145,22 @@
 
 .back-arrow {
     font-size: 18px;
+}
+
+.add-chapter-btn {
+    display: inline-block;
+    padding: 8px 20px;
+    background-color: #03672F;
+    color: white;
+    text-decoration: none;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+.add-chapter-btn:hover {
+    background-color: #024D22;
+    color: white;
+    text-decoration: none;
 }

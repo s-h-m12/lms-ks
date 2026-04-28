@@ -5,10 +5,11 @@ from django.http import HttpResponseRedirect
 from django.urls import reverse
 from django.utils import timezone
 from django.contrib import messages
-from .models import UserLoginLog, Course, Category, Chapter, Question, TestResult, UserProgress
+from django.db import models
+from .models import (UserLoginLog, Course, Category, Chapter, Question, TestResult, UserProgress, TheoryProgress,
+                     ChatMessage)
 import os
 import matplotlib
-
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 from datetime import datetime, timedelta
@@ -48,11 +49,55 @@ def login_view(request):
 @login_required
 def home_view(request):
     try:
-        courses = Course.objects.filter(delete_date__isnull=True)
-        return render(request, 'home.html', {'courses': courses})
+        is_admin = request.user.groups.first() and request.user.groups.first().name == 'Администратор'
+
+        if is_admin:
+            courses = Course.objects.filter(delete_date__isnull=True)
+            total_courses_count = courses.count()
+        else:
+            courses = Course.objects.filter(delete_date__isnull=True)
+            total_courses_count = courses.count()
+
+        completed_courses_count = 0
+        last_course = None
+        last_course_percent = 0
+
+        for course in courses:
+            progress = UserProgress.objects.filter(user=request.user, course=course).first()
+            if progress and progress.is_completed:
+                completed_courses_count += 1
+            if progress and progress.percent_complete > 0 and progress.percent_complete < 100:
+                if last_course is None or progress.last_accessed > UserProgress.objects.filter(user=request.user,
+                                                                                               course=last_course).first().last_accessed:
+                    last_course = course
+                    last_course_percent = progress.percent_complete
+
+        if last_course is None:
+            for course in courses:
+                progress = UserProgress.objects.filter(user=request.user, course=course).first()
+                if progress:
+                    if last_course is None or progress.last_accessed > UserProgress.objects.filter(user=request.user,
+                                                                                                   course=last_course).first().last_accessed:
+                        last_course = course
+                        last_course_percent = progress.percent_complete
+                else:
+                    if last_course is None:
+                        last_course = course
+                        last_course_percent = 0
+
+        context = {
+            'courses': courses,
+            'total_courses_count': total_courses_count,
+            'completed_courses_count': completed_courses_count,
+            'last_course': last_course,
+            'last_course_percent': last_course_percent,
+        }
+        return render(request, 'home.html', context)
     except Exception:
         messages.error(request, 'Ошибка', 'Не удалось загрузить курсы')
-        return render(request, 'home.html', {'courses': []})
+        return render(request, 'home.html',
+                      {'courses': [], 'total_courses_count': 0, 'completed_courses_count': 0, 'last_course': None,
+                       'last_course_percent': 0})
 
 
 @login_required
@@ -96,16 +141,24 @@ def course_detail_view(request, course_id):
         if progress.total_chapters != chapters.count():
             progress.total_chapters = chapters.count()
             progress.save()
+            update_user_progress_for_course(request.user, course)
 
-        completed_chapters = TestResult.objects.filter(
+        completed_tests = TestResult.objects.filter(
             user=request.user,
             chapter__course=course
         ).values_list('chapter_id', flat=True)
 
+        completed_theory = TheoryProgress.objects.filter(
+            user=request.user,
+            chapter__course=course
+        ).values_list('chapter_id', flat=True)
+
+        completed_chapters = list(completed_tests) + list(completed_theory)
+
         context = {
             'course': course,
             'chapters': chapters,
-            'completed_chapters': list(completed_chapters),
+            'completed_chapters': completed_chapters,
             'progress': progress,
         }
         return render(request, 'course_detail.html', context)
@@ -119,15 +172,23 @@ def chapter_view(request, chapter_id):
     try:
         chapter = get_object_or_404(Chapter, id=chapter_id)
         existing_result = None
+        theory_completed = False
+
         if chapter.chapter_type == 'test':
             existing_result = TestResult.objects.filter(
                 user=request.user,
                 chapter=chapter
             ).first()
+        else:
+            theory_completed = TheoryProgress.objects.filter(
+                user=request.user,
+                chapter=chapter
+            ).exists()
 
         context = {
             'chapter': chapter,
             'existing_result': existing_result,
+            'theory_completed': theory_completed,
         }
         return render(request, 'chapter_detail.html', context)
     except Exception:
@@ -174,25 +235,8 @@ def submit_test(request, chapter_id):
         )
 
         course = chapter.course
-        completed_tests = TestResult.objects.filter(
-            user=request.user,
-            chapter__course=course
-        ).count()
 
-        progress, _ = UserProgress.objects.get_or_create(
-            user=request.user,
-            course=course,
-            defaults={'total_chapters': course.chapters.count()}
-        )
-        progress.completed_chapters = completed_tests
-        progress.percent_complete = (
-                                                completed_tests / progress.total_chapters) * 100 if progress.total_chapters > 0 else 0
-
-        if progress.percent_complete >= 100:
-            progress.is_completed = True
-            progress.completed_at = timezone.now()
-
-        progress.save()
+        update_user_progress_for_course(request.user, course)
 
         if passed:
             messages.success(request, 'Поздравляем!',
@@ -451,3 +495,261 @@ def hard_delete_course(request, course_id):
     except Exception:
         messages.error(request, 'Ошибка', 'Не удалось выполнить полное удаление')
     return HttpResponseRedirect(reverse('course'))
+
+
+@login_required
+def mark_theory_complete(request, chapter_id):
+    chapter = get_object_or_404(Chapter, id=chapter_id, chapter_type='theory')
+
+    existing, created = TheoryProgress.objects.get_or_create(
+        user=request.user,
+        chapter=chapter
+    )
+
+    if created:
+        course = chapter.course
+        update_user_progress_for_course(request.user, course)
+        messages.success(request, 'Успешно', f'Глава "{chapter.title}" отмечена как прочитанная')
+    else:
+        messages.info(request, 'Информация', f'Вы уже отмечали эту главу как прочитанную')
+
+    return redirect('chapter', chapter_id=chapter_id)
+
+
+@login_required
+def chapter_add_view(request, course_id):
+    course = get_object_or_404(Course, id=course_id)
+
+    user_group = request.user.groups.first()
+    if user_group and user_group.name == 'Гость':
+        messages.error(request, 'Ошибка', 'У вас нет прав для добавления глав')
+        return redirect('course_detail', course_id=course_id)
+
+    return render(request, 'chapter_add.html', {'course': course})
+
+
+@login_required
+def chapter_edit_view(request, chapter_id):
+    chapter = get_object_or_404(Chapter, id=chapter_id)
+    course = chapter.course
+    questions = chapter.questions.all()
+
+    user_group = request.user.groups.first()
+    if user_group and user_group.name == 'Гость':
+        messages.error(request, 'Ошибка', 'У вас нет прав для редактирования глав')
+        return redirect('course_detail', course_id=course.id)
+
+    return render(request, 'chapter_add.html', {
+        'course': course,
+        'chapter': chapter,
+        'questions': questions
+    })
+
+
+@login_required
+def save_chapter(request):
+    if request.method != 'POST':
+        return redirect('course')
+
+    course_id = request.POST.get('course_id')
+    chapter_id = request.POST.get('chapter_id')
+    title = request.POST.get('title')
+    chapter_type = request.POST.get('chapter_type')
+    order = request.POST.get('order', 0)
+    content = request.POST.get('content', '')
+
+    if not title:
+        messages.warning(request, 'Внимание', 'Название главы обязательно для заполнения')
+        return redirect('chapter_add', course_id=course_id)
+
+    try:
+        order = int(order)
+        if order < 1:
+            order = 1
+    except ValueError:
+        order = 1
+
+    course = get_object_or_404(Course, id=course_id)
+
+    if chapter_id:
+        chapter = get_object_or_404(Chapter, id=chapter_id)
+        old_order = chapter.order
+
+        if old_order != order:
+            if order > old_order:
+                Chapter.objects.filter(course=course, order__gt=old_order, order__lte=order).update(
+                    order=models.F('order') - 1)
+            else:
+                Chapter.objects.filter(course=course, order__gte=order, order__lt=old_order).update(
+                    order=models.F('order') + 1)
+
+        chapter.title = title
+        chapter.chapter_type = chapter_type
+        chapter.order = order
+        chapter.content = content
+        chapter.save()
+
+        if chapter_type == 'test':
+            chapter.questions.all().delete()
+            question_texts = request.POST.getlist('question_texts[]')
+            option_a_list = request.POST.getlist('option_a[]')
+            option_b_list = request.POST.getlist('option_b[]')
+            option_c_list = request.POST.getlist('option_c[]')
+            option_d_list = request.POST.getlist('option_d[]')
+            correct_answer_list = request.POST.getlist('correct_answer[]')
+
+            for i in range(len(question_texts)):
+                if question_texts[i] and option_a_list[i] and option_b_list[i]:
+                    Question.objects.create(
+                        chapter=chapter,
+                        text=question_texts[i],
+                        option_a=option_a_list[i],
+                        option_b=option_b_list[i],
+                        option_c=option_c_list[i] if i < len(option_c_list) else '',
+                        option_d=option_d_list[i] if i < len(option_d_list) else '',
+                        correct_answer=correct_answer_list[i] if i < len(correct_answer_list) else 'a'
+                    )
+    else:
+        max_order = Chapter.objects.filter(course=course).aggregate(max_order=models.Max('order'))['max_order']
+        if order > (max_order or 0) + 1:
+            order = (max_order or 0) + 1
+
+        Chapter.objects.filter(course=course, order__gte=order).update(order=models.F('order') + 1)
+
+        chapter = Chapter.objects.create(
+            course=course,
+            title=title,
+            chapter_type=chapter_type,
+            order=order,
+            content=content
+        )
+
+        if chapter_type == 'test':
+            question_texts = request.POST.getlist('question_texts[]')
+            option_a_list = request.POST.getlist('option_a[]')
+            option_b_list = request.POST.getlist('option_b[]')
+            option_c_list = request.POST.getlist('option_c[]')
+            option_d_list = request.POST.getlist('option_d[]')
+            correct_answer_list = request.POST.getlist('correct_answer[]')
+
+            for i in range(len(question_texts)):
+                if question_texts[i] and option_a_list[i] and option_b_list[i]:
+                    Question.objects.create(
+                        chapter=chapter,
+                        text=question_texts[i],
+                        option_a=option_a_list[i],
+                        option_b=option_b_list[i],
+                        option_c=option_c_list[i] if i < len(option_c_list) else '',
+                        option_d=option_d_list[i] if i < len(option_d_list) else '',
+                        correct_answer=correct_answer_list[i] if i < len(correct_answer_list) else 'a'
+                    )
+
+    update_user_progress_for_course(request.user, course)
+
+    messages.success(request, 'Успешно', f'Глава "{title}" успешно сохранена')
+    return redirect('course_detail', course_id=course_id)
+
+
+def update_user_progress_for_course(user, course):
+    completed_tests = TestResult.objects.filter(
+        user=user,
+        chapter__course=course
+    ).count()
+
+    completed_theory = TheoryProgress.objects.filter(
+        user=user,
+        chapter__course=course
+    ).count()
+
+    total_chapters = course.chapters.count()
+    completed_chapters = completed_tests + completed_theory
+
+    progress, _ = UserProgress.objects.get_or_create(
+        user=user,
+        course=course,
+        defaults={'total_chapters': total_chapters}
+    )
+
+    progress.total_chapters = total_chapters
+    progress.completed_chapters = completed_chapters
+    progress.percent_complete = (completed_chapters / total_chapters) * 100 if total_chapters > 0 else 0
+
+    if progress.percent_complete >= 100 and not progress.is_completed:
+        progress.is_completed = True
+        progress.completed_at = timezone.now()
+    elif progress.percent_complete < 100 and progress.is_completed:
+        progress.is_completed = False
+        progress.completed_at = None
+
+    progress.save()
+
+
+@login_required
+def chapter_delete_view(request, chapter_id):
+    chapter = get_object_or_404(Chapter, id=chapter_id)
+    course_id = chapter.course.id
+    course = chapter.course
+
+    user_group = request.user.groups.first()
+    if user_group and user_group.name == 'Гость':
+        messages.error(request, 'Ошибка', 'У вас нет прав для удаления глав')
+        return redirect('course_detail', course_id=course_id)
+
+    chapter_title = chapter.title
+    deleted_order = chapter.order
+
+    chapter.delete()
+
+    Chapter.objects.filter(course=course, order__gt=deleted_order).update(order=models.F('order') - 1)
+
+    update_user_progress_for_course(request.user, course)
+
+    messages.success(request, 'Успешно', f'Глава "{chapter_title}" удалена')
+    return redirect('course_detail', course_id=course_id)
+
+def update_user_progress_for_course(user, course):
+    completed_tests = TestResult.objects.filter(
+        user=user,
+        chapter__course=course
+    ).count()
+
+    completed_theory = TheoryProgress.objects.filter(
+        user=user,
+        chapter__course=course
+    ).count()
+
+    total_chapters = course.chapters.count()
+    completed_chapters = completed_tests + completed_theory
+
+    progress, created = UserProgress.objects.get_or_create(
+        user=user,
+        course=course,
+        defaults={
+            'total_chapters': total_chapters,
+            'completed_chapters': completed_chapters,
+            'percent_complete': (completed_chapters / total_chapters) * 100 if total_chapters > 0 else 0
+        }
+    )
+
+    if not created:
+        progress.total_chapters = total_chapters
+        progress.completed_chapters = completed_chapters
+        progress.percent_complete = (completed_chapters / total_chapters) * 100 if total_chapters > 0 else 0
+
+    if progress.percent_complete >= 100 and not progress.is_completed:
+        progress.is_completed = True
+        progress.completed_at = timezone.now()
+    elif progress.percent_complete < 100 and progress.is_completed:
+        progress.is_completed = False
+        progress.completed_at = None
+
+    progress.save()
+
+@login_required
+def chat_view(request, course_id):
+    course = get_object_or_404(Course, id=course_id)
+    chat_history = ChatMessage.objects.filter(course=course).order_by('id')
+    return render(request, 'chat.html', {
+        'course': course,
+        'chat_history': chat_history
+    })

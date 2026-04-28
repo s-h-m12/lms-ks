@@ -21,6 +21,7 @@ from django.conf import settings
 from django.conf.urls.static import static
 
 urlpatterns = [
+    path('admin/', admin.site.urls),
     path('', views.home_view, name='home'),
     path('login/', views.login_view, name='login'),
     path('logout/', views.logout_view, name='logout'),
@@ -34,7 +35,14 @@ urlpatterns = [
     path('soft-delete/<int:course_id>/', views.soft_delete_course, name='soft_delete'),
     path('hard-delete/<int:course_id>/', views.hard_delete_course, name='hard_delete'),
     path('statistics/', views.statistics_view, name='statistics'),
+    path('mark-theory-complete/<int:chapter_id>/', views.mark_theory_complete, name='mark_theory_complete'),
+    path('chapter/add/<int:course_id>/', views.chapter_add_view, name='chapter_add'),
+    path('chapter/edit/<int:chapter_id>/', views.chapter_edit_view, name='chapter_edit'),
+    path('save-chapter/', views.save_chapter, name='save_chapter'),
+    path('chapter/delete/<int:chapter_id>/', views.chapter_delete_view, name='chapter_delete'),
+    path('chat/<int:course_id>/', views.chat_view, name='chat')
 ]
 
 if settings.DEBUG:
+    urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

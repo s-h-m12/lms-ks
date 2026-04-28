@@ -1,0 +1,316 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{% if chapter %}Редактирование главы{% else %}Добавление главы{% endif %}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css"
+          rel="stylesheet" integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB"
+          crossorigin="anonymous">
+    <link href="{% static 'styles/styles.css' %}" rel="stylesheet">
+    <link href="{% static 'styles/crud.css' %}" rel="stylesheet">
+    <link href="{% static 'styles/chapter_add.css' %}" rel="stylesheet">
+    <link href="{% static 'styles/notifications.css' %}" rel="stylesheet">
+    <link href="{% static 'images/kialogo.ico' %}" rel="icon">
+</head>
+<body>
+    <div class="notification-container">
+    {% if messages %}
+        {% for message in messages %}
+        <div class="notification notification-{% if message.tags == 'error' %}error{% elif message.tags == 'success' %}success{% elif message.tags == 'warning' %}warning{% else %}info{% endif %}">
+            <div class="notification-icon">
+                {% if message.tags == 'success' %}✔
+                {% elif message.tags == 'error' %}✘
+                {% elif message.tags == 'warning' %}▲
+                {% else %}●{% endif %}
+            </div>
+            <div class="notification-content">
+                <div class="notification-title">
+                    {% if message.tags == 'success' %}Успешно
+                    {% elif message.tags == 'error' %}Ошибка
+                    {% elif message.tags == 'warning' %}Внимание
+                    {% else %}Информация{% endif %}
+                </div>
+                <div class="notification-message">{{ message.message }}</div>
+            </div>
+            <button class="notification-close">✕</button>
+        </div>
+        {% endfor %}
+    {% endif %}
+    </div>
+
+    <nav class="navbar navbar-expand shadow-sm">
+        <div class="container-fluid">
+            <a href="{% url 'home' %}" class="navbar-brand first-item"><img src="{% static 'images/kia-navlogo.png' %}"></a>
+            <div class="collapse navbar-collapse">
+                <ul class="navbar-nav">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="{% url 'home' %}">Система обучения</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="{% url 'home' %}">Моё обучение</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="{% url 'course' %}">Курсы</a>
+                    </li>
+                    {% if user.is_authenticated and user.groups.first.name == 'Администратор' %}
+                    <li class="nav-item">
+                        <a class="nav-link active" href="{% url 'statistics' %}">Статистика</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="{% url 'add' %}">Добавить курс</a>
+                    </li>
+                    {% endif %}
+                </ul>
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="{% url 'home' %}">ЛК</a>
+                    </li>
+                    {% if user.is_authenticated and user.groups.first.name != 'Гость' %}
+                    <li class="nav-item last-item">
+                        <a class="nav-link active" href="{% url 'logout' %}">Выйти</a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="main-content">
+        <a href="{% url 'course_detail' course.id %}" class="back-button">
+            <span class="back-arrow">←</span> Назад к курсу
+        </a>
+
+        <form method="POST" enctype="multipart/form-data" class="form-container" action="{% url 'save_chapter' %}">
+            {% csrf_token %}
+            <input type="hidden" name="course_id" value="{{ course.id }}">
+            {% if chapter %}
+                <input type="hidden" name="chapter_id" value="{{ chapter.id }}">
+            {% endif %}
+
+            <div class="form-header">
+                <h1 class="form-title">{% if chapter %}Редактирование главы{% else %}Добавление главы{% endif %}</h1>
+                <button type="submit" class="save-icon-btn">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M17 3H5C3.89 3 3 3.9 3 5V19C3 20.1 3.89 21 5 21H19C20.1 21 21 20.1 21 19V7L17 3Z" fill="#9ACC39" stroke="#9ACC39" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M17 21V14H7V21" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M7 3V7H15" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </button>
+            </div>
+
+            <div class="form-fields">
+                <div class="field-row">
+                    <div class="field-group full-width">
+                        <label class="field-label">Название главы</label>
+                        <input type="text" name="title" class="field-input" placeholder="Введите название главы" value="{{ chapter.title|default:'' }}">
+                    </div>
+                </div>
+
+                <div class="field-row">
+                    <div class="field-group">
+                        <label class="field-label">Тип главы</label>
+                        <select name="chapter_type" id="chapterType" class="field-select">
+                            <option value="theory" {% if chapter.chapter_type == 'theory' %}selected{% endif %}>Теоретический материал</option>
+                            <option value="test" {% if chapter.chapter_type == 'test' %}selected{% endif %}>Тест</option>
+                        </select>
+                    </div>
+                    <div class="field-group">
+                        <label class="field-label">Порядковый номер</label>
+                        <input type="number" name="order" class="field-input" placeholder="0" value="{{ chapter.order|default:0 }}"
+                        min="1">
+                    </div>
+                </div>
+
+                <div class="field-row" id="theoryContentBlock">
+                    <div class="field-group full-width">
+                        <label class="field-label">Содержание (теоретический материал)</label>
+                        <textarea name="content" class="description-textarea" placeholder="Введите текст главы...">{{ chapter.content|default:'' }}</textarea>
+                    </div>
+                </div>
+            </div>
+
+            <div class="questions-container" id="questionsContainer" style="display: none;">
+                <h2 class="description-title">Вопросы теста</h2>
+                <div id="questionsList">
+                    {% if questions %}
+                        {% for question in questions %}
+                        <div class="question-item" data-question-id="{{ question.id }}">
+                            <div class="question-header">
+                                <strong>Вопрос {{ forloop.counter }}</strong>
+                                <button type="button" class="remove-question" onclick="removeQuestion(this)">Удалить вопрос</button>
+                            </div>
+                            <input type="hidden" name="question_ids[]" value="{{ question.id }}">
+                            <div class="field-group full-width">
+                                <label class="field-label">Текст вопроса</label>
+                                <input type="text" name="question_texts[]" class="field-input" value="{{ question.text }}">
+                            </div>
+                            <div class="option-row">
+                                <label>A)</label>
+                                <input type="text" name="option_a[]" class="field-input" value="{{ question.option_a }}">
+                            </div>
+                            <div class="option-row">
+                                <label>Б)</label>
+                                <input type="text" name="option_b[]" class="field-input" value="{{ question.option_b }}">
+                            </div>
+                            <div class="option-row">
+                                <label>В)</label>
+                                <input type="text" name="option_c[]" class="field-input" value="{{ question.option_c }}">
+                            </div>
+                            <div class="option-row">
+                                <label>Г)</label>
+                                <input type="text" name="option_d[]" class="field-input" value="{{ question.option_d }}">
+                            </div>
+                            <div class="field-group full-width">
+                                <label class="field-label">Правильный ответ</label>
+                                <select name="correct_answer[]" class="field-select">
+                                    <option value="a" {% if question.correct_answer == 'a' %}selected{% endif %}>A</option>
+                                    <option value="b" {% if question.correct_answer == 'b' %}selected{% endif %}>Б</option>
+                                    <option value="c" {% if question.correct_answer == 'c' %}selected{% endif %}>В</option>
+                                    <option value="d" {% if question.correct_answer == 'd' %}selected{% endif %}>Г</option>
+                                </select>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% endif %}
+                </div>
+                <div class="add-question-wrapper">
+                    <button type="button" class="add-question-btn" id="addQuestionBtn">+ Добавить вопрос</button>
+                </div>
+            </div>
+
+            <div class="form-actions">
+                <a href="{% url 'course_detail' course.id %}" class="cancel-btn">Отмена</a>
+                <button type="submit" class="save-btn">Сохранить</button>
+            </div>
+        </form>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{% static 'js/notifications.js' %}"></script>
+    <script>
+        const chapterType = document.getElementById('chapterType');
+        const questionsContainer = document.getElementById('questionsContainer');
+        const theoryContentBlock = document.getElementById('theoryContentBlock');
+        const questionsList = document.getElementById('questionsList');
+
+        function updateVisibility() {
+            if (chapterType.value === 'test') {
+                questionsContainer.style.display = 'block';
+                theoryContentBlock.style.display = 'none';
+            } else {
+                questionsContainer.style.display = 'none';
+                theoryContentBlock.style.display = 'flex';
+            }
+        }
+
+        function renumberQuestions() {
+            const questionItems = document.querySelectorAll('.question-item');
+            questionItems.forEach((item, index) => {
+                const headerStrong = item.querySelector('.question-header strong');
+                if (headerStrong) {
+                    headerStrong.textContent = `Вопрос ${index + 1}`;
+                }
+            });
+        }
+
+        function removeQuestion(btn) {
+            const questionItem = btn.closest('.question-item');
+            if (questionItem) {
+                questionItem.remove();
+                renumberQuestions();
+            }
+        }
+
+        function addQuestion() {
+            const questionItems = document.querySelectorAll('.question-item');
+            const newNumber = questionItems.length + 1;
+
+            const newQuestion = document.createElement('div');
+            newQuestion.className = 'question-item';
+            newQuestion.innerHTML = `
+                <div class="question-header">
+                    <strong>Вопрос ${newNumber}</strong>
+                    <button type="button" class="remove-question" onclick="removeQuestion(this)">Удалить вопрос</button>
+                </div>
+                <div class="field-group full-width">
+                    <label class="field-label">Текст вопроса</label>
+                    <input type="text" name="question_texts[]" class="field-input" placeholder="Введите текст вопроса">
+                </div>
+                <div class="option-row">
+                    <label>A)</label>
+                    <input type="text" name="option_a[]" class="field-input" placeholder="Вариант А">
+                </div>
+                <div class="option-row">
+                    <label>Б)</label>
+                    <input type="text" name="option_b[]" class="field-input" placeholder="Вариант Б">
+                </div>
+                <div class="option-row">
+                    <label>В)</label>
+                    <input type="text" name="option_c[]" class="field-input" placeholder="Вариант В (необязательно)">
+                </div>
+                <div class="option-row">
+                    <label>Г)</label>
+                    <input type="text" name="option_d[]" class="field-input" placeholder="Вариант Г (необязательно)">
+                </div>
+                <div class="field-group full-width">
+                    <label class="field-label">Правильный ответ</label>
+                    <select name="correct_answer[]" class="field-select">
+                        <option value="a">A</option>
+                        <option value="b">Б</option>
+                        <option value="c">В</option>
+                        <option value="d">Г</option>
+                    </select>
+                </div>
+            `;
+            questionsList.appendChild(newQuestion);
+        }
+
+        chapterType.addEventListener('change', updateVisibility);
+        document.getElementById('addQuestionBtn').addEventListener('click', addQuestion);
+        updateVisibility();
+    </script>
+    <script>
+        const pageKey = 'chapterPageOpen_' + window.location.pathname;
+
+        function checkAndBlock() {
+            if (localStorage.getItem(pageKey) === 'true') {
+                const notification = document.createElement('div');
+                notification.className = 'notification notification-warning';
+                notification.innerHTML = `
+                    <div class="notification-icon">▲</div>
+                    <div class="notification-content">
+                        <div class="notification-title">Внимание</div>
+                        <div class="notification-message">Страница добавления/редактирования главы уже открыта. Пожалуйста, закройте её перед открытием новой.</div>
+                    </div>
+                    <button class="notification-close">✕</button>
+                `;
+                const container = document.querySelector('.notification-container');
+                if (container) {
+                    container.appendChild(notification);
+                } else {
+                    alert('Страница добавления/редактирования главы уже открыта в другой вкладке!');
+                }
+                const form = document.querySelector('form');
+                if (form) {
+                    form.style.pointerEvents = 'none';
+                    form.style.opacity = '0.5';
+                }
+                const closeBtn = notification.querySelector('.notification-close');
+                if (closeBtn) {
+                    closeBtn.addEventListener('click', function() {
+                        notification.remove();
+                    });
+                }
+                return false;
+            }
+            localStorage.setItem(pageKey, 'true');
+            window.addEventListener('beforeunload', function() {
+                localStorage.removeItem(pageKey);
+            });
+            return true;
+        }
+        checkAndBlock();
+    </script>
+</body>
+</html>

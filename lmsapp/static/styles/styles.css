@@ -101,3 +101,48 @@ html {
     transform: translateY(-5px);
     box-shadow: 0 5px 15px rgba(0,0,0,0.1);
 }
+
+.btn-continue {
+    display: inline-block;
+    background-color: #9ACC39;
+    color: white;
+    padding: 10px 20px;
+    text-decoration: none;
+    margin-top: 15px;
+    border-radius: 5px;
+}
+
+.btn-continue:hover {
+    background-color: #7DA82E;
+    color: white;
+}
+
+.course-progress-text {
+    margin-top: 10px;
+    font-size: 14px;
+    color: #666;
+}
+
+.continue-learning-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+}
+
+.continue-learning-link {
+    color: #9ACC39;
+    text-decoration: none;
+    font-size: 22px;
+    font-weight: normal;
+    display: inline-block;
+    margin-bottom: 8px;
+}
+
+
+.course-progress-text {
+    margin-top: 8px;
+    font-size: 14px;
+    color: #666;
+}

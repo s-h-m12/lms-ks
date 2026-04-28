@@ -109,3 +109,22 @@ class UserProgress(models.Model):
 class UserLoginLog(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='logins', verbose_name='Пользователь')
     login_time = models.DateTimeField(auto_now_add=True, verbose_name='Время входа')
+
+
+class TheoryProgress(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='theory_progress',
+                             verbose_name='Пользователь')
+    chapter = models.ForeignKey(Chapter, on_delete=models.CASCADE, related_name='theory_progress', verbose_name='Глава')
+    completed_at = models.DateTimeField(auto_now_add=True, verbose_name='Дата прочтения')
+
+    class Meta:
+        unique_together = ['user', 'chapter']
+
+class ChatMessage(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='chat_messages', verbose_name='Пользователь')
+    course = models.ForeignKey(Course, on_delete=models.CASCADE, null=True, blank=True, verbose_name='Курс')
+    message = models.TextField(verbose_name='Сообщение')
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name='Дата и время')
+
+    class Meta:
+        ordering = ['created_at']

@@ -36,80 +36,96 @@
         {% endfor %}
     {% endif %}
 </div>
-    <nav class="navbar navbar-expand shadow-sm">
-        <div class="container-fluid">
-            <a href="{% url 'home' %}" class="navbar-brand first-item"><img src="{% static 'images/kia-navlogo.png' %}"></a>
-            <div class="collapse navbar-collapse">
-                <ul class="navbar-nav">
-                    <li class="nav-item">
-                        <a class="nav-link active" href="{% url 'home' %}">Система обучения</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link active" href="{% url 'home' %}">Моё обучение</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link active" href="{% url 'course' %}">Курсы</a>
-                    </li>
-                    {% if user.is_authenticated and user.groups.first.name == 'Администратор' %}
-                    <li class="nav-item">
-                        <a class="nav-link active" href="{% url 'statistics' %}">Статистика</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link active" href="{% url 'add' %}">Добавить курс</a>
-                    </li>
-                    {% endif %}
-                </ul>
-                <ul class="navbar-nav ms-auto">
-                    <li class="nav-item">
-                        <a class="nav-link active" href="{% url 'home' %}">ЛК</a>
-                    </li>
-                    {% if user.is_authenticated and user.groups.first.name != 'Гость' %}
-                    <li class="nav-item last-item">
-                        <a class="nav-link active" href="{% url 'logout' %}">Выйти</a>
-                    </li>
-                    {% endif %}
-                </ul>
-            </div>
-        </div>
-    </nav>
-    <div class="main-content">
-        <p class="above-block-text">Здравствуйте, {{ user.username }}!</p>
-        {% if user.groups.first.name == 'Гость' %}
-            <div class="guest-notice">
-                <p>Вы вошли как гость. Для полного доступа <a href="{% url 'login' %}">авторизуйтесь</a></p>
-            </div>
-        {% endif %}
-        <div class="first-block">
-            <div class="container">
-                <p class="container-text">Ваш прогресс</p>
-                <div class="progress-bar"></div>
-                <p class="completed-text">Пройдено X из Z курсов</p>
-            </div>
-            <div class="container">
-                <p class="container-text">Продолжить обучение</p>
-                <p class="container-text">Пройдено X из Z курсов</p>
-            </div>
-        </div>
-        <p class="above-block-text">Рекомендуемые курсы</p>
-        <div class="first-block">
-            {% for course in courses %}
-                {% if course.id < 5 %}
-                <div class="container course-card-link" onclick="location.href='{% url 'course_detail' course.id %}'" style="cursor: pointer;">
-                    <p class="course-header">{{ course.title }}</p>
-                    <p class="course-length">{{ course.duration_hours }} ч</p>
-                </div>
+
+<nav class="navbar navbar-expand shadow-sm">
+    <div class="container-fluid">
+        <a href="{% url 'home' %}" class="navbar-brand first-item"><img src="{% static 'images/kia-navlogo.png' %}"></a>
+        <div class="collapse navbar-collapse">
+            <ul class="navbar-nav">
+                <li class="nav-item">
+                    <a class="nav-link active" href="{% url 'home' %}">Система обучения</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link active" href="{% url 'home' %}">Моё обучение</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link active" href="{% url 'course' %}">Курсы</a>
+                </li>
+                {% if user.is_authenticated and user.groups.first.name == 'Администратор' %}
+                <li class="nav-item">
+                    <a class="nav-link active" href="{% url 'statistics' %}">Статистика</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link active" href="{% url 'add' %}">Добавить курс</a>
+                </li>
                 {% endif %}
-            {% endfor %}
+            </ul>
+            <ul class="navbar-nav ms-auto">
+                <li class="nav-item">
+                    <a class="nav-link active" href="{% url 'home' %}">ЛК</a>
+                </li>
+                {% if user.is_authenticated and user.groups.first.name != 'Гость' %}
+                <li class="nav-item last-item">
+                    <a class="nav-link active" href="{% url 'logout' %}">Выйти</a>
+                </li>
+                {% endif %}
+            </ul>
         </div>
     </div>
-    <footer class="footer shadow-up-sm">
-        <span class="first-item">2004-2026 Киасофт Абакан. Все права защищены</span>
-        <span class="ms-auto last-item" style="color: #03672F">Политика конфиденциальности</span>
-    </footer>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"
-            integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI"
-            crossorigin="anonymous">
-    </script>
-    <script src="{% static 'js/notifications.js' %}"></script>
+</nav>
+
+<div class="main-content">
+    <p class="above-block-text">Здравствуйте, {{ user.username }}!</p>
+
+    {% if user.groups.first.name == 'Гость' %}
+        <div class="guest-notice">
+            <p>Вы вошли как гость. Для полного доступа <a href="{% url 'login' %}">авторизуйтесь</a></p>
+        </div>
+    {% endif %}
+
+    <div class="first-block">
+        {% if user.is_authenticated and user.groups.first.name != 'Гость' %}
+        <div class="container">
+            <p class="container-text">Ваш прогресс</p>
+            <div class="progress-bar" style="width: {% widthratio completed_courses_count total_courses_count 100 %}%;"></div>
+            <p class="completed-text">Пройдено {{ completed_courses_count }} из {{ total_courses_count }} курсов</p>
+        </div>
+        {% endif %}
+
+        {% if user.is_authenticated and user.groups.first.name != 'Гость' %}
+        <div class="container">
+            <p class="container-text">Продолжить обучение</p>
+            {% if last_course %}
+                <a href="{% url 'course_detail' last_course.id %}" class="continue-learning-link">{{ last_course.title }}</a>
+                <p class="course-progress-text">Вы прошли {{ last_course_percent|floatformat:0 }}% курса</p>
+            {% else %}
+                <p class="container-text">Нет активных курсов</p>
+                <a href="{% url 'course' %}" class="continue-learning-link">Выбрать курс</a>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+
+    <p class="above-block-text">Рекомендуемые курсы</p>
+    <div class="first-block">
+        {% for course in courses|slice:":4" %}
+            <div class="container course-card-link" onclick="location.href='{% url 'course_detail' course.id %}'" style="cursor: pointer;">
+                <p class="course-header">{{ course.title }}</p>
+                <p class="course-length">{{ course.duration_hours }} ч</p>
+            </div>
+        {% endfor %}
+    </div>
+</div>
+
+<footer class="footer shadow-up-sm">
+    <span class="first-item">2004-2026 Киасофт Абакан. Все права защищены</span>
+    <span class="ms-auto last-item" style="color: #03672F">Политика конфиденциальности</span>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI"
+        crossorigin="anonymous">
+</script>
+<script src="{% static 'js/notifications.js' %}"></script>
 </body>
 </html>
