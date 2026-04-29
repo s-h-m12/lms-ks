@@ -40,7 +40,13 @@ urlpatterns = [
     path('chapter/edit/<int:chapter_id>/', views.chapter_edit_view, name='chapter_edit'),
     path('save-chapter/', views.save_chapter, name='save_chapter'),
     path('chapter/delete/<int:chapter_id>/', views.chapter_delete_view, name='chapter_delete'),
-    path('chat/<int:course_id>/', views.chat_view, name='chat')
+    path('chat/<int:course_id>/', views.chat_view, name='chat'),
+    path('certificates/', views.certificate_list, name='certificate_list'),
+    path('certificate/add/', views.certificate_add, name='certificate_add'),
+    path('certificate/edit/<int:cert_id>/', views.certificate_edit, name='certificate_edit'),
+    path('certificate/delete/<int:cert_id>/', views.certificate_delete, name='certificate_delete'),
+    path('certificate/download/<int:cert_id>/', views.download_certificate_pdf, name='download_certificate_pdf'),
+    path('certificate/verify/<str:cert_number>/', views.verify_certificate, name='verify_certificate')
 ]
 
 if settings.DEBUG:

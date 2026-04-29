@@ -1,0 +1,170 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{% if certificate %}Редактирование сертификата{% else %}Добавление сертификата{% endif %}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css"
+          rel="stylesheet" integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB"
+          crossorigin="anonymous">
+    <link href="{% static 'styles/styles.css' %}" rel="stylesheet">
+    <link href="{% static 'styles/certificate.css' %}" rel="stylesheet">
+    <link href="{% static 'styles/notifications.css' %}" rel="stylesheet">
+    <link href="{% static 'images/kialogo.ico' %}" rel="icon">
+</head>
+<body>
+<div class="notification-container">
+    {% if messages %}
+        {% for message in messages %}
+        <div class="notification notification-{% if message.tags == 'error' %}error{% elif message.tags == 'success' %}success{% elif message.tags == 'warning' %}warning{% else %}info{% endif %}">
+            <div class="notification-icon">
+                {% if message.tags == 'success' %}✔
+                {% elif message.tags == 'error' %}✘
+                {% elif message.tags == 'warning' %}▲
+                {% else %}●{% endif %}
+            </div>
+            <div class="notification-content">
+                <div class="notification-title">
+                    {% if message.tags == 'success' %}Успешно
+                    {% elif message.tags == 'error' %}Ошибка
+                    {% elif message.tags == 'warning' %}Внимание
+                    {% else %}Информация{% endif %}
+                </div>
+                <div class="notification-message">{{ message.message }}</div>
+            </div>
+            <button class="notification-close">✕</button>
+        </div>
+        {% endfor %}
+    {% endif %}
+</div>
+
+<nav class="navbar navbar-expand shadow-sm">
+    <div class="container-fluid">
+        <a href="{% url 'home' %}" class="navbar-brand first-item"><img src="{% static 'images/kia-navlogo.png' %}"></a>
+        <div class="collapse navbar-collapse">
+            <ul class="navbar-nav">
+                <li class="nav-item">
+                    <a class="nav-link active" href="{% url 'home' %}">Система обучения</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link active" href="{% url 'home' %}">Моё обучение</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link active" href="{% url 'course' %}">Курсы</a>
+                </li>
+                {% if user.is_authenticated and user.groups.first.name == 'Администратор' %}
+                <li class="nav-item">
+                    <a class="nav-link active" href="{% url 'statistics' %}">Статистика</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link active" href="{% url 'add' %}">Добавить курс</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link active" href="{% url 'certificate_list' %}">Сертификаты</a>
+                </li>
+                {% endif %}
+            </ul>
+            <ul class="navbar-nav ms-auto">
+                <li class="nav-item">
+                    <a class="nav-link active" href="{% url 'home' %}">ЛК</a>
+                </li>
+                {% if user.is_authenticated and user.groups.first.name != 'Гость' %}
+                <li class="nav-item last-item">
+                    <a class="nav-link active" href="{% url 'logout' %}">Выйти</a>
+                </li>
+                {% endif %}
+            </ul>
+        </div>
+    </div>
+</nav>
+
+<div class="main-content">
+    <a href="{% url 'certificate_list' %}" class="back-button">
+        <span class="back-arrow">←</span> Назад к сертификатам
+    </a>
+
+    <div class="form-container">
+        <div class="form-header">
+            <h1 class="form-title">{% if certificate %}Редактирование сертификата{% else %}Добавление сертификата{% endif %}</h1>
+        </div>
+
+        <form method="POST" enctype="multipart/form-data" class="form-fields">
+            {% csrf_token %}
+
+            <div class="field-row">
+                <div class="field-group">
+                    <label class="field-label">Сотрудник</label>
+                    <select name="user" class="field-select" {% if certificate %}disabled{% endif %} required>
+                        <option value="">Выберите сотрудника</option>
+                        {% for user in users %}
+                        <option value="{{ user.id }}" {% if certificate and certificate.user.id == user.id %}selected{% endif %}>
+                            {{ user.username }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="field-group">
+                    <label class="field-label">Курс (опционально)</label>
+                    <select name="course" class="field-select">
+                        <option value="">Не связан с курсом</option>
+                        {% for course in courses %}
+                        <option value="{{ course.id }}" {% if certificate and certificate.course.id == course.id %}selected{% endif %}>
+                            {{ course.title }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+
+            <div class="field-row">
+                <div class="field-group">
+                    <label class="field-label">Название сертификата</label>
+                    <input type="text" name="title" class="field-input" value="{{ certificate.title|default:'' }}" required>
+                </div>
+            </div>
+
+            <div class="field-row">
+                <div class="field-group">
+                    <label class="field-label">Действителен с</label>
+                    <input type="date" name="valid_from" class="field-input" value="{{ certificate.valid_from|date:'Y-m-d'|default:'' }}" required>
+                </div>
+                <div class="field-group">
+                    <label class="field-label">Действителен до</label>
+                    <input type="date" name="valid_until" class="field-input" value="{{ certificate.valid_until|date:'Y-m-d'|default:'' }}" required>
+                </div>
+            </div>
+
+            <div class="field-row">
+                <div class="field-group">
+                    <label class="field-label">Файл сертификата (PDF)</label>
+                    <input type="file" name="file" class="field-input" accept=".pdf">
+                    {% if certificate and certificate.file %}
+                        <p class="upload-hint">Текущий файл: <a href="{{ certificate.file.url }}" target="_blank">{{ certificate.file.name }}</a></p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="field-row">
+                <div class="field-group">
+                    <label class="field-label">Примечания</label>
+                    <textarea name="notes" class="description-textarea" rows="4">{{ certificate.notes|default:'' }}</textarea>
+                </div>
+            </div>
+
+            <div class="form-actions">
+                <a href="{% url 'certificate_list' %}" class="cancel-btn">Отмена</a>
+                <button type="submit" class="save-btn">Сохранить</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<footer class="footer shadow-up-sm">
+    <span class="first-item">2004-2026 Киасофт Абакан. Все права защищены</span>
+    <span class="ms-auto last-item" style="color: #03672F">Политика конфиденциальности</span>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
+<script src="{% static 'js/notifications.js' %}"></script>
+</body>
+</html>

@@ -59,6 +59,9 @@
                 <li class="nav-item">
                     <a class="nav-link active" href="{% url 'add' %}">Добавить курс</a>
                 </li>
+                <li class="nav-item">
+                    <a class="nav-link active" href="{% url 'certificate_list' %}">Сертификаты</a>
+                </li>
                 {% endif %}
             </ul>
             <ul class="navbar-nav ms-auto">
@@ -89,12 +92,15 @@
                 <div class="progress-bar-fill" style="width: {{ progress.percent_complete|floatformat:0 }}%;"></div>
                 <span class="progress-text">Прогресс: {{ progress.percent_complete|floatformat:0 }}%</span>
             </div>
-            {% if user.is_authenticated and user.groups.first.name == 'Администратор' or user.is_authenticated and user.groups.first.name == 'Методист' %}
-            <div style="margin-top: 15px;">
+            <div style="margin-top: 15px; display: flex; gap: 10px; flex-wrap: wrap;">
+                {% if user.is_authenticated and user.groups.first.name == 'Администратор' or user.is_authenticated and user.groups.first.name == 'Методист' %}
                 <a href="{% url 'chapter_add' course.id %}" class="add-chapter-btn">+ Добавить главу</a>
                 <a href="{% url 'chat' course.id %}" class="chat-btn">Чат курса</a>
+                {% endif %}
+                {% if progress.percent_complete >= 100 and certificate %}
+                <a href="{% url 'download_certificate_pdf' certificate.id %}" class="certificate-btn">Скачать сертификат</a>
+                {% endif %}
             </div>
-            {% endif %}
         </div>
     </div>
 

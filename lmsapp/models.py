@@ -2,7 +2,11 @@ from django.db import models
 import os
 from PIL import Image
 from django.contrib.auth.models import User
-
+import hashlib
+from django.utils import timezone
+from django.db.models.signals import post_save
+from django.dispatch import receiver
+from datetime import timedelta
 
 class Category(models.Model):
     name = models.CharField(max_length=100, unique=True, verbose_name='Название категории')
@@ -128,3 +132,68 @@ class ChatMessage(models.Model):
 
     class Meta:
         ordering = ['created_at']
+
+
+class Certificate(models.Model):
+    TYPE_CHOICES = [
+        ('manual', 'Ручной'),
+        ('auto', 'Автоматический (по завершению курса)'),
+    ]
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='certificates', verbose_name='Сотрудник')
+    course = models.ForeignKey(Course, on_delete=models.CASCADE, null=True, blank=True, verbose_name='Курс')
+    title = models.CharField(max_length=200, verbose_name='Название сертификата')
+    certificate_number = models.CharField(max_length=50, unique=True, verbose_name='Номер сертификата', blank=True)
+    certificate_type = models.CharField(max_length=20, choices=TYPE_CHOICES, default='manual')
+    issued_at = models.DateTimeField(auto_now_add=True, verbose_name='Дата выдачи')
+    valid_from = models.DateField(verbose_name='Действителен с')
+    valid_until = models.DateField(verbose_name='Действителен до')
+    file = models.FileField(upload_to='certificates/', blank=True, null=True)
+    notes = models.TextField(blank=True)
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-valid_until']
+        verbose_name = 'Сертификат'
+        verbose_name_plural = 'Сертификаты'
+
+    @property
+    def is_expired(self):
+        return self.valid_until < timezone.now().date()
+
+    @property
+    def days_until_expiry(self):
+        delta = self.valid_until - timezone.now().date()
+        return delta.days
+
+    def generate_certificate_number(self):
+        unique_string = f"{self.user.id}_{self.course.id}_{timezone.now().timestamp()}"
+        return hashlib.md5(unique_string.encode()).hexdigest()[:10].upper()
+
+    def save(self, *args, **kwargs):
+        if not self.certificate_number:
+            self.certificate_number = self.generate_certificate_number()
+        super().save(*args, **kwargs)
+
+
+@receiver(post_save, sender=UserProgress)
+def generate_certificate_on_completion(sender, instance, created, **kwargs):
+    if instance.percent_complete >= 100 and instance.is_completed:
+        existing = Certificate.objects.filter(
+            user=instance.user,
+            course=instance.course,
+            certificate_type='auto'
+        ).exists()
+
+        if not existing:
+            Certificate.objects.create(
+                user=instance.user,
+                course=instance.course,
+                title=f"Сертификат о прохождении курса \"{instance.course.title}\"",
+                certificate_type='auto',
+                valid_from=timezone.now().date(),
+                valid_until=timezone.now().date() + timedelta(days=365),
+                is_active=True
+            )

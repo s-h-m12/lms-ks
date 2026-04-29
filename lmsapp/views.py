@@ -1,22 +1,37 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
-from django.http import HttpResponseRedirect
+from django.http import HttpResponseRedirect, HttpResponse
 from django.urls import reverse
 from django.utils import timezone
 from django.contrib import messages
+from django.contrib.auth.models import User
 from django.db import models
 from .models import (UserLoginLog, Course, Category, Chapter, Question, TestResult, UserProgress, TheoryProgress,
-                     ChatMessage)
+                     ChatMessage, Certificate)
 import os
 import matplotlib
+import qrcode
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 from datetime import datetime, timedelta
 from calendar import monthrange
 import base64
 from io import BytesIO
+from reportlab.lib.pagesizes import A4
+from reportlab.pdfgen import canvas
+from reportlab.pdfbase import pdfmetrics
+from reportlab.pdfbase.ttfonts import TTFont
+from reportlab.lib.utils import ImageReader
+import io
 
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+FONT_PATH = os.path.join(BASE_DIR, 'lmsapp', 'static', 'fonts', 'DejaVuSans.ttf')
+if os.path.exists(FONT_PATH):
+    pdfmetrics.registerFont(TTFont('DejaVuSans', FONT_PATH))
+    FONT_NAME = 'DejaVuSans'
+else:
+    FONT_NAME = 'Helvetica'
 
 def login_view(request):
     if request.method == 'POST':
@@ -131,6 +146,11 @@ def course_detail_view(request, course_id):
     try:
         course = get_object_or_404(Course, id=course_id, delete_date__isnull=True)
         chapters = course.chapters.all()
+        certificate = Certificate.objects.filter(
+            user=request.user,
+            course=course,
+            certificate_type='auto'
+        ).first()
 
         progress, created = UserProgress.objects.get_or_create(
             user=request.user,
@@ -160,6 +180,7 @@ def course_detail_view(request, course_id):
             'chapters': chapters,
             'completed_chapters': completed_chapters,
             'progress': progress,
+            'certificate': certificate
         }
         return render(request, 'course_detail.html', context)
     except Exception:
@@ -753,3 +774,170 @@ def chat_view(request, course_id):
         'course': course,
         'chat_history': chat_history
     })
+
+
+@login_required
+def certificate_list(request):
+    user_group = request.user.groups.first()
+
+    if user_group and user_group.name == 'Администратор':
+        certificates = Certificate.objects.all()
+    else:
+        certificates = Certificate.objects.filter(user=request.user)
+
+    expired_count = 0
+    expires_soon = 0
+
+    for cert in certificates:
+        if cert.is_expired:
+            expired_count += 1
+        elif cert.days_until_expiry <= 30:
+            expires_soon += 1
+
+    return render(request, 'certificate_list.html', {
+        'certificates': certificates,
+        'expired_count': expired_count,
+        'expires_soon': expires_soon,
+        'is_admin': user_group and user_group.name == 'Администратор'
+    })
+
+
+@login_required
+def certificate_add(request):
+    if request.method == 'POST':
+        try:
+            certificate = Certificate(
+                user_id=request.POST.get('user'),
+                course_id=request.POST.get('course') or None,
+                title=request.POST.get('title'),
+                valid_from=request.POST.get('valid_from'),
+                valid_until=request.POST.get('valid_until'),
+                file=request.FILES.get('file'),
+                notes=request.POST.get('notes')
+            )
+            certificate.save()
+            messages.success(request, 'Успешно', 'Сертификат добавлен')
+            return redirect('certificate_list')
+        except Exception as e:
+            messages.error(request, 'Ошибка', f'Не удалось добавить сертификат: {e}')
+
+    users = User.objects.filter(is_active=True)
+    courses = Course.objects.filter(delete_date__isnull=True)
+    return render(request, 'certificate_form.html', {'users': users, 'courses': courses})
+
+@login_required
+def verify_certificate(request, cert_number):
+    cert = get_object_or_404(Certificate, certificate_number=cert_number)
+    return render(request, 'verify.html', {'cert': cert})
+
+@login_required
+def certificate_edit(request, cert_id):
+    certificate = get_object_or_404(Certificate, id=cert_id)
+
+    user_group = request.user.groups.first()
+    if user_group and user_group.name != 'Администратор' and certificate.user != request.user:
+        messages.error(request, 'Ошибка', 'Нет прав для редактирования')
+        return redirect('certificate_list')
+
+    if request.method == 'POST':
+        certificate.title = request.POST.get('title')
+        certificate.valid_from = request.POST.get('valid_from')
+        certificate.valid_until = request.POST.get('valid_until')
+        certificate.notes = request.POST.get('notes')
+        if request.FILES.get('file'):
+            certificate.file = request.FILES.get('file')
+        certificate.save()
+        messages.success(request, 'Успешно', 'Сертификат обновлён')
+        return redirect('certificate_list')
+
+    return render(request, 'certificate_form.html', {'certificate': certificate})
+
+
+@login_required
+def certificate_delete(request, cert_id):
+    if request.user.groups.first().name != 'Администратор':
+        messages.error(request, 'Ошибка', 'Нет прав для удаления')
+        return redirect('certificate_list')
+
+    certificate = get_object_or_404(Certificate, id=cert_id)
+    certificate.delete()
+    messages.success(request, 'Успешно', 'Сертификат удалён')
+    return redirect('certificate_list')
+
+
+@login_required
+def download_certificate_pdf(request, cert_id):
+    certificate = get_object_or_404(Certificate, id=cert_id)
+
+    if certificate.user != request.user and request.user.groups.first().name != 'Администратор':
+        messages.error(request, 'Ошибка', 'Нет доступа')
+        return redirect('certificate_list')
+
+    buffer = io.BytesIO()
+    p = canvas.Canvas(buffer, pagesize=A4)
+    width, height = A4
+
+    logo_path = os.path.join(BASE_DIR, 'lmsapp', 'static', 'images', 'kia-navlogo.png')
+    if os.path.exists(logo_path):
+        try:
+            logo = ImageReader(logo_path)
+            p.drawImage(logo, (width - 100) / 2, height - 90, width=100, height=50, preserveAspectRatio=True)
+        except Exception as e:
+            print(f"Ошибка логотипа: {e}")
+
+    p.setStrokeColorRGB(0.6, 0.8, 0.2)
+    p.setLineWidth(3)
+    p.rect(30, 30, width - 60, height - 60)
+    p.setLineWidth(1)
+    p.rect(35, 35, width - 70, height - 70)
+
+    p.setFont(FONT_NAME, 32)
+    p.drawCentredString(width / 2, height - 160, "СЕРТИФИКАТ")
+    p.setLineWidth(1.5)
+    p.line(width / 2 - 120, height - 175, width / 2 + 120, height - 175)
+
+    center_y = height / 2 + 50
+    p.setFont(FONT_NAME, 14)
+    p.drawCentredString(width / 2, center_y, "Настоящим подтверждается, что")
+    p.setFont(FONT_NAME, 20)
+    p.drawCentredString(width / 2, center_y - 40, certificate.user.get_full_name() or certificate.user.username)
+    p.setFont(FONT_NAME, 14)
+    p.drawCentredString(width / 2, center_y - 80, "успешно завершил(а)")
+    p.setFont(FONT_NAME, 18)
+    course_title = certificate.course.title if certificate.course else certificate.title
+    p.drawCentredString(width / 2, center_y - 130, course_title)
+
+    p.setFont(FONT_NAME, 12)
+    p.drawCentredString(width / 2, 80, f"Дата выдачи: {certificate.issued_at.strftime('%d.%m.%Y')}")
+    p.drawCentredString(width / 2, 60, f"Номер сертификата: {certificate.certificate_number}")
+
+    qr_data = request.build_absolute_uri(f'/certificates/verify/{certificate.certificate_number}/')
+    qr = qrcode.QRCode(version=1, box_size=10, border=1)
+    qr.add_data(qr_data)
+    qr.make(fit=True)
+
+    qr_img = qr.make_image(fill_color="black", back_color="white")
+    qr_buffer = io.BytesIO()
+    qr_img.save(qr_buffer)
+    qr_buffer.seek(0)
+
+    # Настройки позиционирования
+    qr_size = 60
+    qr_x = width - 130  # Позиция QR-кода по горизонтали
+    qr_y = 55  # Позиция QR-кода по вертикали
+
+    # Рисуем QR-код
+    p.drawImage(ImageReader(qr_buffer), qr_x, qr_y, width=qr_size, height=qr_size)
+
+    # Центрируем текст относительно QR-кода
+    # Координата X для центра текста = X кода + (ширина кода / 2)
+    text_center_x = qr_x + (qr_size / 2)
+
+    p.setFont(FONT_NAME, 7)
+    p.drawCentredString(text_center_x, qr_y - 10, "Проверить подлинность")
+
+    p.save()
+    buffer.seek(0)
+    response = HttpResponse(buffer, content_type='application/pdf')
+    response['Content-Disposition'] = f'attachment; filename="certificate_{certificate.id}.pdf"'
+    return response
