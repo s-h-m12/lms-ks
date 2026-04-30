@@ -147,20 +147,44 @@
     font-size: 18px;
 }
 
-.add-chapter-btn {
-    display: inline-block;
-    padding: 8px 20px;
+.btn-group {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-top: 15px;
+}
+
+.add-chapter-btn, .chat-btn, .certificate-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 10px 24px;
     background-color: #03672F;
     color: white;
     text-decoration: none;
     border: none;
-    border-radius: 5px;
+    border-radius: 6px;
     cursor: pointer;
     font-size: 14px;
+    font-weight: 500;
+    transition: all 0.2s ease;
 }
 
-.add-chapter-btn:hover {
+.add-chapter-btn:hover, .chat-btn:hover, .certificate-btn:hover {
     background-color: #024D22;
     color: white;
     text-decoration: none;
+    transform: translateY(-1px);
+}
+
+.chat-btn {
+    background-color: #9ACC39;
+}
+
+.chat-btn:hover {
+    background-color: #7DA82E;
+}
+
+.certificate-btn {
+    background-color: #03672F;
 }

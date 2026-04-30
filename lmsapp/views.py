@@ -8,7 +8,7 @@ from django.contrib import messages
 from django.contrib.auth.models import User
 from django.db import models
 from .models import (UserLoginLog, Course, Category, Chapter, Question, TestResult, UserProgress, TheoryProgress,
-                     ChatMessage, Certificate)
+                     ChatMessage, Certificate, UserProfile)
 import os
 import matplotlib
 import qrcode
@@ -877,6 +877,7 @@ def download_certificate_pdf(request, cert_id):
     p = canvas.Canvas(buffer, pagesize=A4)
     width, height = A4
 
+    # Логотип
     logo_path = os.path.join(BASE_DIR, 'lmsapp', 'static', 'images', 'kia-navlogo.png')
     if os.path.exists(logo_path):
         try:
@@ -885,17 +886,20 @@ def download_certificate_pdf(request, cert_id):
         except Exception as e:
             print(f"Ошибка логотипа: {e}")
 
+    # Двойная рамка
     p.setStrokeColorRGB(0.6, 0.8, 0.2)
     p.setLineWidth(3)
     p.rect(30, 30, width - 60, height - 60)
     p.setLineWidth(1)
     p.rect(35, 35, width - 70, height - 70)
 
+    # Заголовок
     p.setFont(FONT_NAME, 32)
     p.drawCentredString(width / 2, height - 160, "СЕРТИФИКАТ")
     p.setLineWidth(1.5)
     p.line(width / 2 - 120, height - 175, width / 2 + 120, height - 175)
 
+    # Основной текст
     center_y = height / 2 + 50
     p.setFont(FONT_NAME, 14)
     p.drawCentredString(width / 2, center_y, "Настоящим подтверждается, что")
@@ -907,37 +911,75 @@ def download_certificate_pdf(request, cert_id):
     course_title = certificate.course.title if certificate.course else certificate.title
     p.drawCentredString(width / 2, center_y - 130, course_title)
 
+    # Дата и номер сертификата
     p.setFont(FONT_NAME, 12)
     p.drawCentredString(width / 2, 80, f"Дата выдачи: {certificate.issued_at.strftime('%d.%m.%Y')}")
     p.drawCentredString(width / 2, 60, f"Номер сертификата: {certificate.certificate_number}")
 
-    qr_data = request.build_absolute_uri(f'/certificates/verify/{certificate.certificate_number}/')
-    qr = qrcode.QRCode(version=1, box_size=10, border=1)
-    qr.add_data(qr_data)
-    qr.make(fit=True)
+    # Ссылка для проверки подлинности
+    verify_url = request.build_absolute_uri(f'/certificates/verify/{certificate.certificate_number}/')
+    p.setFont(FONT_NAME, 8)
+    p.drawCentredString(width / 2, 42, f"Проверить подлинность: {verify_url}")
 
-    qr_img = qr.make_image(fill_color="black", back_color="white")
-    qr_buffer = io.BytesIO()
-    qr_img.save(qr_buffer)
-    qr_buffer.seek(0)
+    # Место для подписи (левая нижняя часть)
+    p.setFont(FONT_NAME, 10)
+    p.drawString(50, 85, "Подпись:")
+    p.line(120, 85, 200, 85)
 
-    # Настройки позиционирования
-    qr_size = 60
-    qr_x = width - 130  # Позиция QR-кода по горизонтали
-    qr_y = 55  # Позиция QR-кода по вертикали
-
-    # Рисуем QR-код
-    p.drawImage(ImageReader(qr_buffer), qr_x, qr_y, width=qr_size, height=qr_size)
-
-    # Центрируем текст относительно QR-кода
-    # Координата X для центра текста = X кода + (ширина кода / 2)
-    text_center_x = qr_x + (qr_size / 2)
-
-    p.setFont(FONT_NAME, 7)
-    p.drawCentredString(text_center_x, qr_y - 10, "Проверить подлинность")
+    # Печать (круг)
+    p.setStrokeColorRGB(0, 0, 0)
+    p.setLineWidth(0.5)
+    p.circle(width - 80, 80, 25)
+    p.setFont(FONT_NAME, 6)
+    p.drawCentredString(width - 80, 82, "МЕСТО")
+    p.drawCentredString(width - 80, 75, "ДЛЯ")
+    p.drawCentredString(width - 80, 68, "ПЕЧАТИ")
 
     p.save()
     buffer.seek(0)
     response = HttpResponse(buffer, content_type='application/pdf')
     response['Content-Disposition'] = f'attachment; filename="certificate_{certificate.id}.pdf"'
     return response
+
+
+@login_required
+def profile_view(request):
+    profile, created = UserProfile.objects.get_or_create(user=request.user)
+    certificates = Certificate.objects.filter(user=request.user)
+
+    if request.method == 'POST':
+        first_name = request.POST.get('first_name', '')
+        last_name = request.POST.get('last_name', '')
+        email = request.POST.get('email', '')
+        patronymic = request.POST.get('patronymic', '')
+        avatar = request.FILES.get('avatar')
+
+        user = request.user
+        user.first_name = first_name
+        user.last_name = last_name
+        user.email = email
+        user.save()
+
+        profile.patronymic = patronymic
+        if avatar:
+            profile.avatar = avatar
+        profile.save()
+
+        messages.success(request, 'Успешно', 'Профиль обновлён')
+        return redirect('profile')
+
+    context = {
+        'profile': profile,
+        'certificates': certificates,
+    }
+    return render(request, 'profile.html', context)
+
+
+@login_required
+def delete_avatar(request):
+    if request.method == 'POST':
+        profile = get_object_or_404(UserProfile, user=request.user)
+        if profile.avatar:
+            profile.avatar.delete()
+            messages.success(request, 'Успешно', 'Аватар удалён')
+    return redirect('profile')

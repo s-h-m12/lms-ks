@@ -197,3 +197,16 @@ def generate_certificate_on_completion(sender, instance, created, **kwargs):
                 valid_until=timezone.now().date() + timedelta(days=365),
                 is_active=True
             )
+
+class UserProfile(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
+    patronymic = models.CharField(max_length=100, blank=True, verbose_name='Отчество')
+    avatar = models.ImageField(upload_to='avatars/', blank=True, null=True)
+
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+
+        if self.avatar and os.path.isfile(self.avatar.path):
+            img = Image.open(self.avatar.path)
+            img = img.resize((200,200), Image.Resampling.LANCZOS)
+            img.save(self.avatar.path)

@@ -1,0 +1,220 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Личный кабинет</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css"
+          rel="stylesheet" integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB"
+          crossorigin="anonymous">
+    <link href="{% static 'styles/styles.css' %}" rel="stylesheet">
+    <link href="{% static 'styles/profile.css' %}" rel="stylesheet">
+    <link href="{% static 'styles/notifications.css' %}" rel="stylesheet">
+    <link href="{% static 'images/kialogo.ico' %}" rel="icon">
+</head>
+<body>
+<div class="notification-container">
+    {% if messages %}
+        {% for message in messages %}
+        <div class="notification notification-{% if message.tags == 'error' %}error{% elif message.tags == 'success' %}success{% elif message.tags == 'warning' %}warning{% else %}info{% endif %}">
+            <div class="notification-icon">
+                {% if message.tags == 'success' %}✔
+                {% elif message.tags == 'error' %}✘
+                {% elif message.tags == 'warning' %}▲
+                {% else %}●{% endif %}
+            </div>
+            <div class="notification-content">
+                <div class="notification-title">
+                    {% if message.tags == 'success' %}Успешно
+                    {% elif message.tags == 'error' %}Ошибка
+                    {% elif message.tags == 'warning' %}Внимание
+                    {% else %}Информация{% endif %}
+                </div>
+                <div class="notification-message">{{ message.message }}</div>
+            </div>
+            <button class="notification-close">✕</button>
+        </div>
+        {% endfor %}
+    {% endif %}
+</div>
+
+<nav class="navbar navbar-expand shadow-sm">
+    <div class="container-fluid">
+        <a href="{% url 'home' %}" class="navbar-brand first-item"><img src="{% static 'images/kia-navlogo.png' %}"></a>
+        <div class="collapse navbar-collapse">
+            <ul class="navbar-nav">
+                <li class="nav-item">
+                    <a class="nav-link active" href="{% url 'home' %}">Система обучения</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link active" href="{% url 'home' %}">Моё обучение</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link active" href="{% url 'course' %}">Курсы</a>
+                </li>
+                {% if user.is_authenticated and user.groups.first.name == 'Администратор' or user.is_authenticated and user.groups.first.name == 'Методист' %}
+                <li class="nav-item">
+                    <a class="nav-link active" href="{% url 'statistics' %}">Статистика</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link active" href="{% url 'add' %}">Добавить курс</a>
+                </li>
+                {% endif %}
+            </ul>
+            <ul class="navbar-nav ms-auto">
+                <li class="nav-item">
+                    <a class="nav-link active" href="{% url 'profile' %}">ЛК</a>
+                </li>
+                {% if user.is_authenticated and user.groups.first.name != 'Гость' %}
+                <li class="nav-item last-item">
+                    <a class="nav-link active" href="{% url 'logout' %}">Выйти</a>
+                </li>
+                {% endif %}
+            </ul>
+        </div>
+    </div>
+</nav>
+
+<div class="main-content">
+    <div class="profile-container">
+        <div class="profile-header">
+            <h1>Личный кабинет</h1>
+        </div>
+
+        <form method="POST" enctype="multipart/form-data" class="profile-form">
+            {% csrf_token %}
+
+            <div class="profile-card">
+                <div class="profile-avatar-wrapper">
+                    <div class="profile-avatar" id="avatarContainer">
+                        {% if profile.avatar %}
+                            <img src="{{ profile.avatar.url }}" alt="Аватар" class="avatar-img" id="avatarPreview">
+                        {% else %}
+                            <div class="avatar-placeholder" id="avatarPreview">
+                                {{ user.first_name|first|default:user.username|first|upper }}
+                            </div>
+                        {% endif %}
+                        <div class="avatar-overlay" id="avatarOverlay">
+                            <span>Изменить</span>
+                        </div>
+                    </div>
+                    <input type="file" name="avatar" id="avatarInput" accept="image/*" style="display: none;">
+                    {% if profile.avatar %}
+                    <button type="button" class="delete-avatar-btn" id="deleteAvatarBtn">Удалить аватар</button>
+                    {% endif %}
+                </div>
+
+                <div class="profile-info">
+                    <div class="info-row">
+                        <label class="info-label">Фамилия:</label>
+                        <input type="text" name="last_name" class="info-input" value="{{ user.last_name|default:'' }}">
+                    </div>
+                    <div class="info-row">
+                        <label class="info-label">Имя:</label>
+                        <input type="text" name="first_name" class="info-input" value="{{ user.first_name|default:'' }}">
+                    </div>
+                    <div class="info-row">
+                        <label class="info-label">Отчество:</label>
+                        <input type="text" name="patronymic" class="info-input" value="{{ profile.patronymic|default:'' }}">
+                    </div>
+                    <div class="info-row">
+                        <label class="info-label">Логин:</label>
+                        <span class="info-value">{{ user.username }}</span>
+                    </div>
+                    <div class="info-row">
+                        <label class="info-label">Email:</label>
+                        <input type="email" name="email" class="info-input" value="{{ user.email|default:'' }}">
+                    </div>
+                    <div class="info-row">
+                        <label class="info-label">Группа:</label>
+                        <span class="info-value">{{ user.groups.first.name|default:"Не назначена" }}</span>
+                    </div>
+                    <div class="info-row">
+                        <label class="info-label">Дата регистрации:</label>
+                        <span class="info-value">  {{ user.date_joined|date:"d.m.Y" }}</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-actions">
+                <button type="submit" class="save-btn">Сохранить изменения</button>
+            </div>
+        </form>
+
+        <div class="my-certificates">
+            <h2>Мои сертификаты</h2>
+            {% if certificates %}
+                <div class="certificates-list">
+                    {% for cert in certificates %}
+                    <div class="certificate-item">
+                        <div class="certificate-info">
+                            <span class="certificate-title">{{ cert.title }}</span>
+                            <span class="certificate-date">Выдан: {{ cert.issued_at|date:"d.m.Y" }}</span>
+                        </div>
+                        <a href="{% url 'download_certificate_pdf' cert.id %}" class="download-cert-btn">Скачать PDF</a>
+                    </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <p class="empty-certificates">У вас пока нет сертификатов</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<footer class="footer shadow-up-sm">
+    <span class="first-item">2004-2026 Киасофт Абакан. Все права защищены</span>
+    <span class="ms-auto last-item" style="color: #03672F">Политика конфиденциальности</span>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
+<script src="{% static 'js/notifications.js' %}"></script>
+<script>
+    const avatarContainer = document.getElementById('avatarContainer');
+    const avatarInput = document.getElementById('avatarInput');
+
+    if (avatarContainer) {
+        avatarContainer.addEventListener('click', function() {
+            avatarInput.click();
+        });
+
+        avatarInput.addEventListener('change', function(e) {
+            if (e.target.files && e.target.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    const preview = document.getElementById('avatarPreview');
+                    if (preview.tagName === 'IMG') {
+                        preview.src = event.target.result;
+                    } else {
+                        const newImg = document.createElement('img');
+                        newImg.src = event.target.result;
+                        newImg.className = 'avatar-img';
+                        newImg.id = 'avatarPreview';
+                        preview.parentNode.replaceChild(newImg, preview);
+                    }
+                }
+                reader.readAsDataURL(e.target.files[0]);
+            }
+        });
+    }
+
+    const deleteAvatarBtn = document.getElementById('deleteAvatarBtn');
+    if (deleteAvatarBtn) {
+        deleteAvatarBtn.addEventListener('click', function() {
+            if (confirm('Удалить аватар?')) {
+                fetch('{% url 'delete_avatar' %}', {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': '{{ csrf_token }}'
+                    }
+                }).then(response => {
+                    if (response.ok) {
+                        location.reload();
+                    }
+                });
+            }
+        });
+    }
+</script>
+</body>
+</html>
