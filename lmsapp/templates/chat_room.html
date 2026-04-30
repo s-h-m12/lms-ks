@@ -1,0 +1,155 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Чат с {{ other_user.username }}</title>
+    <link href="{% static 'styles/chat_room.css' %}" rel="stylesheet">
+    <link href="{% static 'images/kialogo.ico' %}" rel="icon">
+</head>
+<body>
+
+    <div class="main-content">
+        <a href="{% url 'chat_list' %}" class="back-button">← Назад к списку чатов</a>
+
+        <div class="chat-container">
+            <div class="chat-header">
+                <h2>Диалог с {{ other_user.username }}</h2>
+            </div>
+
+            <div class="chat-messages" id="chat-messages">
+                {% for msg in chat_messages %}
+                    <div class="message">
+                        <span class="message-username">{{ msg.user.username }}</span>
+                        <div class="message-text">
+                            {% if msg.message %}
+                                <p style="margin:0;">{{ msg.message }}</p>
+                            {% endif %}
+                            {% if msg.image %}
+                                <img src="{{ msg.image.url }}" style="max-width:200px; border-radius:5px; margin-top:5px;" />
+                            {% endif %}
+                            {% if msg.file %}
+                                <a href="{{ msg.file.url }}" target="_blank" style="color: #03672F; display:block; margin-top:5px;">Скачать файл</a>
+                            {% endif %}
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+
+            <!-- Поля ввода -->
+            <div class="chat-input">
+                <input type="text" id="chat-message-input" placeholder="Введите сообщение...">
+
+                <div class="file-inputs">
+                    <label>Изображение: <input type="file" id="chat-image-input" accept="image/*"></label>
+                    <label>Документ: <input type="file" id="chat-file-input"></label>
+                </div>
+
+                <button id="chat-message-submit">Отправить</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Переменные из Django в JS -->
+    {{ room_name|json_script:"room-name" }}
+
+    <script>
+        const roomName = JSON.parse(document.getElementById('room-name').textContent);
+
+        // Авто-скролл вниз
+        const chatMessages = document.getElementById('chat-messages');
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+
+        // Инициализация WebSocket
+        const chatSocket = new WebSocket(
+            (window.location.protocol === 'https:' ? 'wss://' : 'ws://')
+            + window.location.host
+            + '/ws/chat/'
+            + roomName
+            + '/'
+        );
+
+        chatSocket.onmessage = function(e) {
+            const data = JSON.parse(e.data);
+            const messageElement = document.createElement('div');
+            messageElement.classList.add('message');
+
+            let content = `<span class="message-username">${data.username}</span><div class="message-text">`;
+
+            if (data.message_type === 'text') {
+                content += `<p style="margin:0;">${data.message}</p>`;
+            } else if (data.message_type === 'image') {
+                content += `<img src="${data.image_url}" style="max-width:200px; border-radius:5px; margin-top:5px;" />`;
+            } else if (data.message_type === 'file') {
+                content += `<a href="${data.file_url}" target="_blank" style="color: #03672F; display:block; margin-top:5px;">📂 ${data.filename || 'Скачать файл'}</a>`;
+            }
+
+            content += '</div>';
+            messageElement.innerHTML = content;
+            chatMessages.appendChild(messageElement);
+
+            // Скроллим к новому сообщению
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        };
+
+        chatSocket.onclose = function(e) {
+            console.error('Socket закрылся внезапно');
+        };
+
+        // Отправка сообщений
+        document.getElementById('chat-message-submit').onclick = function(e) {
+            const messageInput = document.getElementById('chat-message-input');
+            const imageInput = document.getElementById('chat-image-input');
+            const fileInput = document.getElementById('chat-file-input');
+
+            // 1. Текстовое сообщение
+            if (messageInput.value.trim() !== '') {
+                chatSocket.send(JSON.stringify({
+                    'type': 'text',
+                    'message': messageInput.value,
+                    'room_name': roomName
+                }));
+                messageInput.value = '';
+            }
+
+            // 2. Картинка (Base64)
+            if (imageInput.files.length > 0) {
+                const file = imageInput.files[0];
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    chatSocket.send(JSON.stringify({
+                        'type': 'image',
+                        'image_data': e.target.result,
+                        'room_name': roomName
+                    }));
+                    imageInput.value = '';
+                };
+                reader.readAsDataURL(file);
+            }
+
+            // 3. Обычный файл (Base64)
+            if (fileInput.files.length > 0) {
+                const file = fileInput.files[0];
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    chatSocket.send(JSON.stringify({
+                        'type': 'file',
+                        'file_data': e.target.result,
+                        'filename': file.name,
+                        'room_name': roomName
+                    }));
+                    fileInput.value = '';
+                };
+                reader.readAsDataURL(file);
+            }
+        };
+
+        // Отправка по Enter
+        document.getElementById('chat-message-input').onkeyup = function(e) {
+            if (e.key === 'Enter') {
+                document.getElementById('chat-message-submit').click();
+            }
+        };
+    </script>
+</body>
+</html>

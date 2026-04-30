@@ -127,7 +127,10 @@ class TheoryProgress(models.Model):
 class ChatMessage(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='chat_messages', verbose_name='Пользователь')
     course = models.ForeignKey(Course, on_delete=models.CASCADE, null=True, blank=True, verbose_name='Курс')
-    message = models.TextField(verbose_name='Сообщение')
+    room = models.CharField(max_length=100, blank=True, null=True, verbose_name='Комната чата')
+    message = models.TextField(verbose_name='Сообщение', blank=True)
+    file = models.FileField(upload_to='chat_files/', blank=True, null=True, verbose_name='Файл')
+    image = models.ImageField(upload_to='chat_images/', blank=True, null=True, verbose_name='Изображение')
     created_at = models.DateTimeField(auto_now_add=True, verbose_name='Дата и время')
 
     class Meta:

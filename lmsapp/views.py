@@ -983,3 +983,125 @@ def delete_avatar(request):
             profile.avatar.delete()
             messages.success(request, 'Успешно', 'Аватар удалён')
     return redirect('profile')
+
+
+@login_required
+def my_learning_view(request):
+    user = request.user
+    courses = Course.objects.filter(delete_date__isnull=True)
+
+    in_progress = []
+    completed = []
+    not_started = []
+
+    for course in courses:
+        progress = UserProgress.objects.filter(user=user, course=course).first()
+        if progress:
+            if progress.percent_complete >= 100:
+                completed.append({
+                    'course': course,
+                    'percent': progress.percent_complete
+                })
+            elif progress.percent_complete > 0:
+                in_progress.append({
+                    'course': course,
+                    'percent': progress.percent_complete
+                })
+        else:
+            not_started.append(course)
+
+    context = {
+        'in_progress': in_progress,
+        'completed': completed,
+        'not_started': not_started,
+    }
+    return render(request, 'my_learning.html', context)
+
+
+from django.shortcuts import render, get_object_or_404, redirect
+from django.contrib.auth.decorators import login_required
+from django.contrib.auth.models import User
+from django.contrib import messages
+from functools import wraps
+from .models import ChatMessage
+
+
+def allowed_chat_users_only():
+    """
+    Декоратор для проверки ролей.
+    Блокирует доступ пользователям из группы 'Гость' и без групп.
+    """
+
+    def decorator(view_func):
+        @wraps(view_func)
+        def _wrapped_view(request, *args, **kwargs):
+            allowed_groups = {'Администратор', 'Ментор', 'Сотрудник'}
+
+            # Получаем имя первой группы пользователя
+            user_group = request.user.groups.first()
+            user_group_name = user_group.name if user_group else None
+
+            if user_group_name not in allowed_groups:
+                messages.error(request, "У вас нет доступа к разделу личных сообщений.")
+                return redirect('home')  # Перенаправляем на главную страницу
+
+            return view_func(request, *args, **kwargs)
+
+        return _wrapped_view
+
+    return decorator
+
+
+@login_required
+@allowed_chat_users_only()
+def chat_list_view(request):
+    # Разрешенные группы для общения
+    allowed_groups = ['Администратор', 'Ментор', 'Сотрудник']
+
+    # Получаем пользователей из этих групп, исключая себя
+    users = User.objects.filter(
+        groups__name__in=allowed_groups
+    ).exclude(id=request.user.id).distinct()
+
+    return render(request, 'chat_list.html', {'users': users})
+
+
+@login_required
+@allowed_chat_users_only()
+def chat_room_view(request, user_id, room_type='user'):
+    other_user = get_object_or_404(User, id=user_id)
+
+    # Запрещаем создавать чат с самим собой через прямую ссылку
+    if request.user.id == other_user.id:
+        messages.warning(request, "Вы не можете создать чат с самим собой.")
+        return redirect('chat_list')
+
+    # Проверяем, имеет ли собеседник право общаться
+    allowed_groups = {'Администратор', 'Ментор', 'Сотрудник'}
+    other_user_group = other_user.groups.first()
+    other_user_group_name = other_user_group.name if other_user_group else None
+
+    if other_user_group_name not in allowed_groups:
+        messages.error(request, "Этот пользователь недоступен для личных сообщений.")
+        return redirect('chat_list')
+
+    # Детерминированное имя комнаты
+    ids = sorted([request.user.id, other_user.id])
+    room_name = f"{ids[0]}_{ids[1]}"
+
+    # Загрузка истории сообщений c оптимизацией select_related!
+    messages_history = ChatMessage.objects.filter(
+        room=room_name
+    ).select_related('user').order_by('created_at')
+
+    context = {
+        'room_name': room_name,
+        'other_user': other_user,
+        'chat_messages': messages_history,
+    }
+    return render(request, 'chat_room.html', context)
+
+
+
+
+

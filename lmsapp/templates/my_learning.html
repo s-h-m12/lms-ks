@@ -3,11 +3,12 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Главная</title>
+    <title>Моё обучение</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css"
           rel="stylesheet" integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB"
           crossorigin="anonymous">
     <link href="{% static 'styles/styles.css' %}" rel="stylesheet">
+    <link href="{% static 'styles/my_learning.css' %}" rel="stylesheet">
     <link href="{% static 'styles/notifications.css' %}" rel="stylesheet">
     <link href="{% static 'images/kialogo.ico' %}" rel="icon">
 </head>
@@ -51,17 +52,12 @@
                 <li class="nav-item">
                     <a class="nav-link active" href="{% url 'course' %}">Курсы</a>
                 </li>
-                {% if user.is_authenticated and user.groups.first.name == 'Администратор' %}
+                {% if user.is_authenticated and user.groups.first.name == 'Администратор' or user.is_authenticated and user.groups.first.name == 'Методист' %}
                 <li class="nav-item">
                     <a class="nav-link active" href="{% url 'statistics' %}">Статистика</a>
                 </li>
                 <li class="nav-item">
                     <a class="nav-link active" href="{% url 'add' %}">Добавить курс</a>
-                </li>
-                {% endif %}
-                {% if user.is_authenticated and user.groups.first.name != 'Гость' %}
-                <li class="nav-item">
-                    <a class="nav-link active" href="{% url 'chat_list' %}">Чаты</a>
                 </li>
                 {% endif %}
             </ul>
@@ -80,45 +76,80 @@
 </nav>
 
 <div class="main-content">
-    <p class="above-block-text">Здравствуйте, {{ user.username }}!</p>
-
-    {% if user.groups.first.name == 'Гость' %}
-        <div class="guest-notice">
-            <p>Вы вошли как гость. Для полного доступа <a href="{% url 'login' %}">авторизуйтесь</a></p>
+    <div class="learning-container">
+        <div class="learning-header">
+            <h1>Моё обучение</h1>
         </div>
-    {% endif %}
 
-    <div class="first-block">
-        {% if user.is_authenticated and user.groups.first.name != 'Гость' %}
-        <div class="container">
-            <p class="container-text">Ваш прогресс</p>
-            <div class="progress-bar" style="width: {% widthratio completed_courses_count total_courses_count 100 %}%;"></div>
-            <p class="completed-text">Пройдено {{ completed_courses_count }} из {{ total_courses_count }} курсов</p>
-        </div>
-        {% endif %}
-
-        {% if user.is_authenticated and user.groups.first.name != 'Гость' %}
-        <div class="container">
-            <p class="container-text">Продолжить обучение</p>
-            {% if last_course %}
-                <a href="{% url 'course_detail' last_course.id %}" class="continue-learning-link">{{ last_course.title }}</a>
-                <p class="course-progress-text">Вы прошли {{ last_course_percent|floatformat:0 }}% курса</p>
-            {% else %}
-                <p class="container-text">Нет активных курсов</p>
-                <a href="{% url 'course' %}" class="continue-learning-link">Выбрать курс</a>
-            {% endif %}
-        </div>
-        {% endif %}
-    </div>
-
-    <p class="above-block-text">Рекомендуемые курсы</p>
-    <div class="first-block">
-        {% for course in courses|slice:":4" %}
-            <div class="container course-card-link" onclick="location.href='{% url 'course_detail' course.id %}'" style="cursor: pointer;">
-                <p class="course-header">{{ course.title }}</p>
-                <p class="course-length">{{ course.duration_hours }} ч</p>
+        {% if in_progress %}
+        <div class="learning-section">
+            <h2>Текущие курсы</h2>
+            <div class="courses-list">
+                {% for item in in_progress %}
+                <div class="course-item">
+                    <div class="course-info">
+                        <h3 class="course-title">{{ item.course.title }}</h3>
+                        <p class="course-description">{{ item.course.description|truncatechars:100 }}</p>
+                        <div class="progress-wrapper">
+                            <div class="progress-bar-bg">
+                                <div class="progress-bar-fill-course" style="width: {{ item.percent }}%;"></div>
+                            </div>
+                            <span class="progress-text">Прогресс: {{ item.percent|floatformat:0 }}%</span>
+                        </div>
+                    </div>
+                    <a href="{% url 'course_detail' item.course.id %}" class="continue-btn">Продолжить</a>
+                </div>
+                {% endfor %}
             </div>
-        {% endfor %}
+        </div>
+        {% endif %}
+
+        {% if completed %}
+        <div class="learning-section">
+            <h2>Завершённые курсы</h2>
+            <div class="courses-list">
+                {% for item in completed %}
+                <div class="course-item completed-item">
+                    <div class="course-info">
+                        <h3 class="course-title">{{ item.course.title }}</h3>
+                        <p class="course-description">{{ item.course.description|truncatechars:100 }}</p>
+                        <div class="progress-wrapper">
+                            <div class="progress-bar-bg">
+                                <div class="progress-bar-fill-course completed-fill" style="width: 100%;"></div>
+                            </div>
+                            <span class="progress-text completed-text">Завершён</span>
+                        </div>
+                    </div>
+                    <a href="{% url 'course_detail' item.course.id %}" class="view-btn">Просмотреть</a>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        {% if not_started %}
+        <div class="learning-section">
+            <h2>Рекомендуемые курсы</h2>
+            <div class="courses-list">
+                {% for course in not_started|slice:":4" %}
+                <div class="course-item recommended-item">
+                    <div class="course-info">
+                        <h3 class="course-title">{{ course.title }}</h3>
+                        <p class="course-description">{{ course.description|truncatechars:100 }}</p>
+                    </div>
+                    <a href="{% url 'course_detail' course.id %}" class="start-btn">Начать обучение</a>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        {% if not in_progress and not completed and not not_started %}
+        <div class="empty-state">
+            <p>У вас пока нет курсов</p>
+            <a href="{% url 'course' %}" class="browse-btn">Перейти к каталогу курсов</a>
+        </div>
+        {% endif %}
     </div>
 </div>
 
@@ -127,10 +158,7 @@
     <span class="ms-auto last-item" style="color: #03672F">Политика конфиденциальности</span>
 </footer>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"
-        integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI"
-        crossorigin="anonymous">
-</script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
 <script src="{% static 'js/notifications.js' %}"></script>
 </body>
 </html>

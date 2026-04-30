@@ -1,0 +1,121 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Чат - {{ course.title }}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css"
+          rel="stylesheet" integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB"
+          crossorigin="anonymous">
+    <link href="{% static 'styles/styles.css' %}" rel="stylesheet">
+    <link href="{% static 'styles/notifications.css' %}" rel="stylesheet">
+    <link href="{% static 'images/kialogo.ico' %}" rel="icon">
+    <link href="{% static 'styles/chat.css' %}" rel="stylesheet">
+</head>
+<body>
+    <nav class="navbar navbar-expand shadow-sm">
+        <div class="container-fluid">
+            <a href="{% url 'home' %}" class="navbar-brand first-item"><img src="{% static 'images/kia-navlogo.png' %}"></a>
+            <div class="collapse navbar-collapse">
+                <ul class="navbar-nav">
+                    <li class="nav-item"><a class="nav-link active" href="{% url 'home' %}">Система обучения</a></li>
+                    <li class="nav-item"><a class="nav-link active" href="{% url 'home' %}">Моё обучение</a></li>
+                    <li class="nav-item"><a class="nav-link active" href="{% url 'course' %}">Курсы</a></li>
+                    {% if user.is_authenticated and user.groups.first.name == 'Администратор' %}
+                    <li class="nav-item"><a class="nav-link active" href="{% url 'statistics' %}">Статистика</a></li>
+                    <li class="nav-item"><a class="nav-link active" href="{% url 'add' %}">Добавить курс</a></li>
+                    {% endif %}
+                </ul>
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item"><a class="nav-link active" href="{% url 'profile' %}">ЛК</a></li>
+                    {% if user.is_authenticated and user.groups.first.name != 'Гость' %}
+                    <li class="nav-item last-item"><a class="nav-link active" href="{% url 'logout' %}">Выйти</a></li>
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="main-content">
+        <a href="{% url 'course_detail' course.id %}" class="back-button">
+            <span class="back-arrow">←</span> Назад к курсу
+        </a>
+
+        <div class="chat-container">
+            <div class="chat-header">
+                <h2>Чат курса: {{ course.title }}</h2>
+            </div>
+            <!-- Используем chat_history для истории из базы -->
+            <div class="chat-messages" id="chat-messages">
+                {% for msg in chat_history %}
+                <div class="message">
+                    <span class="message-username">{{ msg.user.username }}</span>
+                    <p class="message-text">{{ msg.message }}</p>
+                </div>
+                {% endfor %}
+            </div>
+            <div class="chat-input">
+                <input type="text" id="message-input" placeholder="Введите сообщение..." autocomplete="off">
+                <button id="send-btn">Отправить</button>
+            </div>
+        </div>
+    </div>
+
+    <footer class="footer shadow-up-sm">
+        <span class="first-item">2004-2026 Киасофт Абакан. Все права защищены</span>
+        <span class="ms-auto last-item" style="color: #03672F">Политика конфиденциальности</span>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{% static 'js/notifications.js' %}"></script>
+    <script>
+        const roomName = 'course_{{ course.id }}';
+        const wsUrl = `ws://${window.location.host}/ws/chat/${roomName}/`;
+        const chatSocket = new WebSocket(wsUrl);
+        const messagesDiv = document.getElementById('chat-messages');
+
+        // Функция прокрутки вниз
+        function scrollToBottom() {
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }
+
+        // Прокрутка при загрузке страницы
+        window.onload = scrollToBottom;
+
+        chatSocket.onmessage = function(e) {
+            const data = JSON.parse(e.data);
+            const newMessage = document.createElement('div');
+            newMessage.className = 'message';
+            newMessage.innerHTML = `
+                <span class="message-username">${data.username}</span>
+                <p class="message-text">${data.message}</p>
+            `;
+            messagesDiv.appendChild(newMessage);
+            scrollToBottom();
+        };
+
+        chatSocket.onclose = function(e) {
+            console.error('Chat socket closed unexpectedly');
+        };
+
+        document.getElementById('send-btn').onclick = function() {
+            const input = document.getElementById('message-input');
+            const message = input.value;
+            if (message) {
+                chatSocket.send(JSON.stringify({
+                    'message': message,
+                    'username': '{{ request.user.username }}',
+                    'course_id': '{{ course.id }}' // Передаем ID курса для сохранения в БД
+                }));
+                input.value = '';
+            }
+        };
+
+        document.getElementById('message-input').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                document.getElementById('send-btn').click();
+            }
+        });
+    </script>
+</body>
+</html>

@@ -48,7 +48,10 @@ urlpatterns = [
     path('certificate/download/<int:cert_id>/', views.download_certificate_pdf, name='download_certificate_pdf'),
     path('certificate/verify/<str:cert_number>/', views.verify_certificate, name='verify_certificate'),
     path('profile/', views.profile_view, name='profile'),
-    path('profile/delete-avatar/', views.delete_avatar, name='delete_avatar')
+    path('profile/delete-avatar/', views.delete_avatar, name='delete_avatar'),
+    path('my-learning/', views.my_learning_view, name='my_learning'),
+    path('chat/', views.chat_list_view, name='chat_list'),
+    path('chat/user/<int:user_id>/', views.chat_room_view, {'room_type': 'user'}, name='chat_user'),
 ]
 
 if settings.DEBUG:
